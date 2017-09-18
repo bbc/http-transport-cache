@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('assert');
-const httpTransport = require('http-transport');
+const httpTransport = require('@bbc/http-transport');
 const Catbox = require('catbox');
 const Memory = require('catbox-memory');
 const nock = require('nock');
@@ -14,7 +14,15 @@ const api = nock('http://www.example.com');
 const defaultHeaders = {
   'cache-control': 'max-age=60'
 };
-const defaultResponse = 'I am a string!';
+
+const defaultResponse = {
+  body: 'I am a string!',
+  url: 'http://www.example.com/',
+  statusCode: 200,
+  elapsedTime: 40,
+  headers: defaultHeaders
+};
+
 const bodySegment = {
   segment: 'http-transport:1.0.0:body',
   id: 'http://www.example.com/'
@@ -34,7 +42,7 @@ function requestWithCache(catbox) {
     .createClient()
     .use(cache.maxAge(catbox))
     .get('http://www.example.com/')
-    .asBody();
+    .asResponse();
 }
 
 describe('Max-Age', () => {
@@ -51,7 +59,7 @@ describe('Max-Age', () => {
 
   it('stores cached values for the max-age value', () => {
     const cache = createCache();
-    api.get('/').reply(200, defaultResponse, defaultHeaders);
+    api.get('/').reply(200, defaultResponse.body, defaultHeaders);
 
     const expiry = Date.now() + 60000;
 
@@ -61,7 +69,7 @@ describe('Max-Age', () => {
         const actualExpiry = cached.ttl + cached.stored;
         const differenceInExpires = actualExpiry - expiry;
 
-        assert.deepEqual(cached.item, defaultResponse);
+        assert.deepEqual(cached.item.body, defaultResponse.body);
         assert(differenceInExpires < 1000);
       });
   });
@@ -89,21 +97,34 @@ describe('Max-Age', () => {
       .then((cached) => assert(!cached));
   });
 
-  it('returns cached response if available', () => {
-    const cachedResponse = 'http-transport';
-    const cache = createCache();
+  it('returns a cached response when available', () => {
+    const headers = {
+      'cache-control': 'max-age=0'
+    };
 
+    const cachedResponse = {
+      body: 'http-transport',
+      headers,
+      statusCode: 200,
+      url: 'http://www.example.com/',
+      elapsedTime: 40
+    };
+
+    const cache = createCache();
     api.get('/').reply(200, defaultResponse, {
-      headers: {
-        'cache-control': 'max-age=0'
-      }
+      headers
     });
 
     return cache.startAsync()
       .then(() => cache.setAsync(bodySegment, cachedResponse, 600))
       .then(() => requestWithCache(cache))
-      .then((body) => {
-        assert.equal(body, cachedResponse);
+      .then((res) => {
+        assert.equal(res.body, cachedResponse.body);
+        assert.deepEqual(res.headers, cachedResponse.headers);
+        assert.equal(res.statusCode, cachedResponse.statusCode);
+        assert.equal(res.url, cachedResponse.url);
+        assert.equal(res.elapsedTime, cachedResponse.elapsedTime);
+
         return cache.drop(bodySegment);
       });
   });
