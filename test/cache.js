@@ -32,7 +32,7 @@ function createCache() {
   return cache;
 }
 
-describe.only('Cache', () => {
+describe('Cache', () => {
   afterEach(() => {
     sandbox.restore();
   });
