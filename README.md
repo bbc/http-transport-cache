@@ -5,7 +5,7 @@ A HTTP spec compliant caching layer for `http-transport`.
 ## Installation
 
 ```
-npm install --save http-transport-to-error
+npm install --save http-transport-cache
 ```
 
 ## Usage
