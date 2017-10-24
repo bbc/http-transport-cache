@@ -8,6 +8,7 @@ const nock = require('nock');
 const bluebird = require('bluebird');
 
 const cache = require('../');
+const events = require('../lib/cache').events;
 
 const api = nock('http://www.example.com');
 const toError = require('@bbc/http-transport-to-error');
@@ -128,7 +129,8 @@ describe('Stale-If-Error', () => {
 
     api.get('/').reply(500, defaultResponse.body, {});
 
-    return cache.startAsync()
+    return cache
+      .startAsync()
       .then(() => cache.setAsync(bodySegment, cachedResponse, 7200))
       .then(() => requestWithCache(cache))
       .then((res) => {
@@ -150,6 +152,32 @@ describe('Stale-If-Error', () => {
       .then(() => assert(false, 'Promise should have failed'))
       .catch((err) => {
         assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
+      });
+  });
+
+  it('emits a stale cache event when returning stale', () => {
+    let cacheStale = false;
+    events.on('cache.stale', () => {
+      cacheStale = true;
+    });
+
+    const cachedResponse = {
+      body: 'http-transport',
+      headers: defaultHeaders,
+      elapsedTime: 40,
+      url: 'http://www.example.com/',
+      statusCode: 200
+    };
+    const cache = createCache();
+
+    api.get('/').reply(500, defaultResponse.body, {});
+
+    return cache
+      .startAsync()
+      .then(() => cache.setAsync(bodySegment, cachedResponse, 7200))
+      .then(() => requestWithCache(cache))
+      .then(() => {
+        assert.ok(cacheStale);
       });
   });
 });
