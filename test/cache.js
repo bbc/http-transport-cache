@@ -45,7 +45,7 @@ describe('Cache', () => {
       .then(() => {
         return getFromCache(cache, SEGMENT, ID)
           .catch(assert.ifError)
-          .then((cached) => {
+          .then(cached => {
             assert.deepEqual(cached.item, cachedResponse);
           });
       });
@@ -59,7 +59,7 @@ describe('Cache', () => {
       .then(() => {
         return getFromCache(cache, SEGMENT, ID)
           .catch(assert.ifError)
-          .then((cached) => {
+          .then(cached => {
             assert.deepEqual(cached.item, { a: 1 });
           });
       });
@@ -128,7 +128,7 @@ describe('Cache', () => {
       return cache.startAsync().then(() => {
         return getFromCache(cache, SEGMENT, ID)
           .then(() => assert.fail())
-          .catch((err) => {
+          .catch(err => {
             assert.equal(err.message, 'error');
           });
       });
