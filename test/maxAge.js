@@ -11,6 +11,8 @@ const cache = require('../');
 
 const api = nock('http://www.example.com');
 
+const VERSION = require('../package').version;
+
 const defaultHeaders = {
   'cache-control': 'max-age=60'
 };
@@ -24,7 +26,7 @@ const defaultResponse = {
 };
 
 const bodySegment = {
-  segment: 'http-transport:1.0.0:body',
+  segment: `http-transport:${VERSION}:body`,
   id: 'http://www.example.com/'
 };
 
@@ -88,7 +90,7 @@ describe('Max-Age', () => {
         .asResponse()
         .then(() =>
           cache.getAsync({
-            segment: 'http-transport:1.0.0:body',
+            segment: `http-transport:${VERSION}:body`,
             id: 'http://www.example.com/some-cacheable-path'
           })
         )
@@ -112,7 +114,7 @@ describe('Max-Age', () => {
         .asResponse()
         .then(() =>
           cache.getAsync({
-            segment: 'http-transport:1.0.0:body',
+            segment: `http-transport:${VERSION}:body`,
             id: 'http://www.example.com/some-cacheable-path?d=ank'
           })
         )
@@ -137,7 +139,7 @@ describe('Max-Age', () => {
         .asResponse()
         .then(() =>
           cache.getAsync({
-            segment: 'http-transport:1.0.0:body',
+            segment: `http-transport:${VERSION}:body`,
             id: 'http://www.example.com/some-cacheable-path?d=ank'
           })
         )

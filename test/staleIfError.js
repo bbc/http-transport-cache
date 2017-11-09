@@ -1,17 +1,19 @@
 'use strict';
 
 const assert = require('assert');
-const httpTransport = require('@bbc/http-transport');
 const Catbox = require('catbox');
 const Memory = require('catbox-memory');
-const nock = require('nock');
 const bluebird = require('bluebird');
+const nock = require('nock');
+
+const httpTransport = require('@bbc/http-transport');
+const toError = require('@bbc/http-transport-to-error');
 
 const cache = require('../');
 const events = require('../lib/cache').events;
 
+const VERSION = require('../package').version;
 const api = nock('http://www.example.com');
-const toError = require('@bbc/http-transport-to-error');
 
 const defaultHeaders = {
   'cache-control': 'max-age=60,stale-if-error=7200'
@@ -26,7 +28,7 @@ const defaultResponse = {
 };
 
 const bodySegment = {
-  segment: 'http-transport:1.0.0:stale',
+  segment: `http-transport:${VERSION}:stale`,
   id: 'http://www.example.com/'
 };
 
@@ -70,7 +72,7 @@ describe('Stale-If-Error', () => {
 
     return requestWithCache(cache)
       .then(() => cache.getAsync(bodySegment))
-      .then((cached) => {
+      .then(cached => {
         const actualExpiry = cached.ttl + cached.stored;
         const differenceInExpires = actualExpiry - expiry;
 
@@ -86,7 +88,7 @@ describe('Stale-If-Error', () => {
 
     return requestWithCache(cache)
       .then(() => cache.getAsync(bodySegment))
-      .then((cached) => assert(!cached));
+      .then(cached => assert(!cached));
   });
 
   it('does not store if stale-if-error=0', () => {
@@ -100,7 +102,7 @@ describe('Stale-If-Error', () => {
 
     return requestWithCache(cache)
       .then(() => cache.getAsync(bodySegment))
-      .then((cached) => assert(!cached));
+      .then(cached => assert(!cached));
   });
 
   it('stores even if no max-age', () => {
@@ -114,7 +116,7 @@ describe('Stale-If-Error', () => {
 
     return requestWithCache(cache)
       .then(() => cache.getAsync(bodySegment))
-      .then((cached) => assert(!cached));
+      .then(cached => assert(!cached));
   });
 
   it('returns cached response if available when error response is returned', () => {
@@ -133,7 +135,7 @@ describe('Stale-If-Error', () => {
       .startAsync()
       .then(() => cache.setAsync(bodySegment, cachedResponse, 7200))
       .then(() => requestWithCache(cache))
-      .then((res) => {
+      .then(res => {
         assert.equal(res.body, cachedResponse.body);
         assert.deepEqual(res.headers, cachedResponse.headers);
         assert.equal(res.elapsedTime, cachedResponse.elapsedTime);
@@ -150,7 +152,7 @@ describe('Stale-If-Error', () => {
 
     return requestWithCache(cache)
       .then(() => assert(false, 'Promise should have failed'))
-      .catch((err) => {
+      .catch(err => {
         assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
       });
   });

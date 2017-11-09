@@ -10,9 +10,9 @@ const sandbox = sinon.sandbox.create();
 const { getFromCache, storeInCache, events } = require('../lib/cache');
 
 const SEGMENT = 'body';
-
+const VERSION = require('../package').version;
 const bodySegment = {
-  segment: 'http-transport:1.0.0:body',
+  segment: `http-transport:${VERSION}:body`,
   id: 'http://www.example.com/'
 };
 
