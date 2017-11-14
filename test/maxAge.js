@@ -69,7 +69,7 @@ describe('Max-Age', () => {
 
     return requestWithCache(cache)
       .then(() => cache.getAsync(bodySegment))
-      .then(cached => {
+      .then((cached) => {
         const actualExpiry = cached.ttl + cached.stored;
         const differenceInExpires = actualExpiry - expiry;
 
@@ -94,7 +94,7 @@ describe('Max-Age', () => {
             id: 'http://www.example.com/some-cacheable-path'
           })
         )
-        .then(cached => {
+        .then((cached) => {
           const actualExpiry = cached.ttl + cached.stored;
           const differenceInExpires = actualExpiry - expiry;
 
@@ -118,7 +118,7 @@ describe('Max-Age', () => {
             id: 'http://www.example.com/some-cacheable-path?d=ank'
           })
         )
-        .then(cached => {
+        .then((cached) => {
           const actualExpiry = cached.ttl + cached.stored;
           const differenceInExpires = actualExpiry - expiry;
 
@@ -143,7 +143,7 @@ describe('Max-Age', () => {
             id: 'http://www.example.com/some-cacheable-path?d=ank'
           })
         )
-        .then(cached => {
+        .then((cached) => {
           const actualExpiry = cached.ttl + cached.stored;
           const differenceInExpires = actualExpiry - expiry;
 
@@ -159,7 +159,7 @@ describe('Max-Age', () => {
 
     return requestWithCache(cache)
       .then(() => cache.getAsync(bodySegment))
-      .then(cached => assert(!cached));
+      .then((cached) => assert(!cached));
   });
 
   it('does not store if max-age=0', () => {
@@ -173,7 +173,7 @@ describe('Max-Age', () => {
 
     return requestWithCache(cache)
       .then(() => cache.getAsync(bodySegment))
-      .then(cached => assert(!cached));
+      .then((cached) => assert(!cached));
   });
 
   it('returns a cached response when available', () => {
@@ -198,7 +198,7 @@ describe('Max-Age', () => {
       .startAsync()
       .then(() => cache.setAsync(bodySegment, cachedResponse, 600))
       .then(() => requestWithCache(cache))
-      .then(res => {
+      .then((res) => {
         assert.equal(res.body, cachedResponse.body);
         assert.deepEqual(res.headers, cachedResponse.headers);
         assert.equal(res.statusCode, cachedResponse.statusCode);
