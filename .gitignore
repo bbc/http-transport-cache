@@ -1,2 +1,6 @@
-package-lock.json
 node_modules
+coverage
+*.log
+package-lock.json
+.vscode
+.nyc_output

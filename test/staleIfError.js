@@ -1,17 +1,19 @@
 'use strict';
 
 const assert = require('assert');
-const httpTransport = require('@bbc/http-transport');
 const Catbox = require('catbox');
 const Memory = require('catbox-memory');
-const nock = require('nock');
 const bluebird = require('bluebird');
+const nock = require('nock');
+
+const httpTransport = require('@bbc/http-transport');
+const toError = require('@bbc/http-transport-to-error');
 
 const cache = require('../');
 const events = require('../lib/cache').events;
 
+const VERSION = require('../package').version;
 const api = nock('http://www.example.com');
-const toError = require('@bbc/http-transport-to-error');
 
 const defaultHeaders = {
   'cache-control': 'max-age=60,stale-if-error=7200'
@@ -26,7 +28,7 @@ const defaultResponse = {
 };
 
 const bodySegment = {
-  segment: 'http-transport:1.0.0:stale',
+  segment: `http-transport:${VERSION}:stale`,
   id: 'http://www.example.com/'
 };
 
