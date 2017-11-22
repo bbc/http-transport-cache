@@ -10,13 +10,7 @@
   "engines": {
     "node": ">=4.0.0"
   },
-  "keywords": [
-    "http-transport",
-    "caching",
-    "http",
-    "client",
-    "middleware"
-  ],
+  "keywords": ["http-transport", "caching", "http", "client", "middleware"],
   "license": "Apache-2.0",
   "devDependencies": {
     "@bbc/http-transport": "^1.0.0",

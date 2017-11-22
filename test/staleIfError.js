@@ -1,6 +1,6 @@
 'use strict';
 
-const assert = require('assert');
+const assert = require('chai').assert;
 const Catbox = require('catbox');
 const Memory = require('catbox-memory');
 const bluebird = require('bluebird');
@@ -78,6 +78,22 @@ describe('Stale-If-Error', () => {
 
         assert.deepEqual(cached.item.body, defaultResponse.body);
         assert(differenceInExpires < 1000);
+      });
+  });
+
+  it('does not store cache entries for errors', () => {
+    const catbox = createCache();
+
+    api.get('/').reply(500, defaultResponse.body, defaultHeaders);
+
+    return httpTransport
+      .createClient()
+      .use(cache.staleIfError(catbox))
+      .get('http://www.example.com/')
+      .asResponse()
+      .then(() => catbox.getAsync(bodySegment))
+      .then((cached) => {
+        assert.isNull(cached);
       });
   });
 
