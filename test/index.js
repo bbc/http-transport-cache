@@ -35,7 +35,7 @@ function createCache() {
 }
 
 describe('http-transport-cache', () => {
-  it.only('supports max-age and stale-if-error', () => {
+  it('supports max-age and stale-if-error together', () => {
     const cache = createCache();
 
     nock('http://www.example.com')

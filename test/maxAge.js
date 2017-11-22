@@ -1,6 +1,6 @@
 'use strict';
 
-const assert = require('assert');
+const assert = require('chai').assert;
 const httpTransport = require('@bbc/http-transport');
 const Catbox = require('catbox');
 const Memory = require('catbox-memory');
@@ -75,6 +75,22 @@ describe('Max-Age', () => {
 
         assert.deepEqual(cached.item.body, defaultResponse.body);
         assert(differenceInExpires < 1000);
+      });
+  });
+
+  it('does not create cache entries for errors', () => {
+    const catbox = createCache();
+
+    api.get('/').reply(500, defaultResponse.body, defaultHeaders);
+
+    return httpTransport
+      .createClient()
+      .use(cache.maxAge(catbox))
+      .get('http://www.example.com/')
+      .asResponse()
+      .then(() => catbox.getAsync(bodySegment))
+      .then((cached) => {
+        assert.isNull(cached);
       });
   });
 

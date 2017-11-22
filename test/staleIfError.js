@@ -68,7 +68,9 @@ describe('Stale-If-Error', () => {
 
     api.get('/').reply(200, defaultResponse.body, defaultHeaders);
 
-    const expiry = Date.now() + 7200000;
+    const maxAge = 60000;
+    const staleIfError = 7200000;
+    const expiry = Date.now() + maxAge + staleIfError;
 
     return requestWithCache(cache)
       .then(() => cache.getAsync(bodySegment))
@@ -77,11 +79,11 @@ describe('Stale-If-Error', () => {
         const differenceInExpires = actualExpiry - expiry;
 
         assert.deepEqual(cached.item.body, defaultResponse.body);
-        assert(differenceInExpires < 1000);
+        assert(differenceInExpires < 1000 && differenceInExpires >= 0);
       });
   });
 
-  it('does not store cache entries for errors', () => {
+  it('does not create cache entries for errors', () => {
     const catbox = createCache();
 
     api.get('/').reply(500, defaultResponse.body, defaultHeaders);
@@ -170,6 +172,27 @@ describe('Stale-If-Error', () => {
       .then(() => assert(false, 'Promise should have failed'))
       .catch((err) => {
         assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
+      });
+  });
+
+  it('continues to the next middleware when there\'s an error and no error handler', () => {
+    const catbox = createCache();
+
+    api.get('/').reply(500, defaultResponse.body, defaultHeaders);
+
+    let called = false;
+
+    return httpTransport
+      .createClient()
+      .use(cache.staleIfError(catbox))
+      .use((ctx, next) => {
+        called = true;
+        return next();
+      })
+      .get('http://www.example.com/')
+      .asResponse()
+      .then(() => {
+        assert.ok(called);
       });
   });
 
