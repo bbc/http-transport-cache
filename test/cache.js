@@ -87,7 +87,7 @@ describe('Cache', () => {
       return getFromCache(cache, SEGMENT, ID, { ignoreCacheErrors })
         .catch(() => assert.fail())
         .then((cached) => {
-          assert.isUndefined(cached);
+          assert.isNull(cached);
         });
     });
   });
