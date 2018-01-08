@@ -65,6 +65,33 @@ describe('Cache', () => {
       });
   });
 
+  it('returns an error', () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'get').yields(new Error('error'));
+
+    return cache.startAsync().then(() => {
+      return getFromCache(cache, SEGMENT, ID)
+        .then(() => assert.fail())
+        .catch((err) => {
+          assert.equal(err.message, 'error');
+        });
+    });
+  });
+
+  it('returns a cache miss when "ignoreCacheErrors" is true', () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'get').yields(new Error('cache lookup failed!'));
+
+    return cache.startAsync().then(() => {
+      const ignoreCacheErrors = true;
+      return getFromCache(cache, SEGMENT, ID, { ignoreCacheErrors })
+        .catch(() => assert.fail())
+        .then((cached) => {
+          assert.isUndefined(cached);
+        });
+    });
+  });
+
   describe('events', () => {
     it('emits a cache hit event', () => {
       const cache = createCache();
@@ -117,19 +144,6 @@ describe('Cache', () => {
           .then(() => assert.fail())
           .catch(() => {
             assert.ok(cacheError);
-          });
-      });
-    });
-
-    it('returns an error', () => {
-      const cache = createCache();
-      sandbox.stub(cache, 'get').yields(new Error('error'));
-
-      return cache.startAsync().then(() => {
-        return getFromCache(cache, SEGMENT, ID)
-          .then(() => assert.fail())
-          .catch((err) => {
-            assert.equal(err.message, 'error');
           });
       });
     });
