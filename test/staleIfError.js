@@ -6,6 +6,8 @@ const Memory = require('catbox-memory');
 const bluebird = require('bluebird');
 const nock = require('nock');
 
+const sinon = require('sinon');
+
 const httpTransport = require('@bbc/http-transport');
 const toError = require('@bbc/http-transport-to-error');
 
@@ -14,6 +16,8 @@ const events = require('../lib/cache').events;
 
 const VERSION = require('../package').version;
 const api = nock('http://www.example.com');
+
+const sandbox = sinon.sandbox.create();
 
 const defaultHeaders = {
   'cache-control': 'max-age=60,stale-if-error=7200'
@@ -41,10 +45,10 @@ function createCache() {
   return cache;
 }
 
-function requestWithCache(catbox) {
+function requestWithCache(catbox, opts) {
   return httpTransport
     .createClient()
-    .use(cache.staleIfError(catbox))
+    .use(cache.staleIfError(catbox, opts))
     .use(toError())
     .get('http://www.example.com/')
     .asResponse();
@@ -53,6 +57,7 @@ function requestWithCache(catbox) {
 describe('Stale-If-Error', () => {
   afterEach(() => {
     nock.cleanAll();
+    sandbox.restore();
   });
 
   it('sets the cache up ready for use', () => {
@@ -169,6 +174,30 @@ describe('Stale-If-Error', () => {
     api.get('/').reply(500, defaultResponse, {});
 
     return requestWithCache(cache)
+      .then(() => assert(false, 'Promise should have failed'))
+      .catch((err) => {
+        assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
+      });
+  });
+
+  it('returns an error if the cache lookup fails', () => {
+    const cache = createCache();
+    api.get('/').reply(500, defaultResponse, {});
+    sandbox.stub(cache, 'get').yields(new Error('cache lookup error'));
+
+    return requestWithCache(cache)
+      .then(() => assert(false, 'Promise should have failed'))
+      .catch((err) => {
+        assert.equal(err.message, 'cache lookup error');
+      });
+  });
+
+  it('returns the original error if "ignoreCacheErrors" is true', () => {
+    const cache = createCache();
+    api.get('/').reply(500, defaultResponse, {});
+    sandbox.stub(cache, 'get').yields(new Error('cache lookup error'));
+
+    return requestWithCache(cache, { ignoreCacheErrors: true })
       .then(() => assert(false, 'Promise should have failed'))
       .catch((err) => {
         assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
