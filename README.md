@@ -63,6 +63,15 @@ const client = HttpTransport.createClient()
 |Max Age|Responses are stored for the duration of the `max-age` directive and are used before any requests are made.|
 |Stale If Error|In order to ensure a resilient service even during errors, http responses can include a `cache-control` directive called `stale-if-error` which means we can use a cached response for that period whilst the service is erroring. To do this a separate response blob is stored for the stale period and on error this response is used alongside the body which is stored for the higher of either `max-age` or `stale-if-error`.|
 
+
+## Middleware Options
+
+Both `maxage` and `staleIfError` accept an options object. 
+
+|Property|Description|
+|----|-----------|
+|`ignoreCacheErrors`| `cache.maxAge` will return a cache miss when this property is `true`. Setting this property true for `cache.staleIfError` will rethrow the original error (not the cache lookup error). `ignoreCacheErrors` is `false` by default. |
+
 ## Cache Key Structure
  
 The cache uses `catbox` to provide a simple pluggable interface, this supports segmenting the cache as well as IDs, thus the following segments are used:
