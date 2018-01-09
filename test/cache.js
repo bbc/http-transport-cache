@@ -147,5 +147,23 @@ describe('Cache', () => {
           });
       });
     });
+
+    it('emits a cache error event when "ignoreCacheErrors" is true', () => {
+      const cache = createCache();
+      sandbox.stub(cache, 'get').yields(new Error('error'));
+
+      let cacheError = false;
+      events.on('cache.error', () => {
+        cacheError = true;
+      });
+
+      return cache.startAsync().then(() => {
+        return getFromCache(cache, SEGMENT, ID, { ignoreCacheErrors: true })
+          .then(() => assert.fail())
+          .catch(() => {
+            assert.ok(cacheError);
+          });
+      });
+    });
   });
 });
