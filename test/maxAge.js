@@ -6,7 +6,9 @@ const Catbox = require('catbox');
 const Memory = require('catbox-memory');
 const nock = require('nock');
 const bluebird = require('bluebird');
+const sinon = require('sinon');
 
+const sandbox = sinon.sandbox.create();
 const cache = require('../');
 
 const api = nock('http://www.example.com');
@@ -52,6 +54,7 @@ function requestWithCache(catbox) {
 describe('Max-Age', () => {
   afterEach(() => {
     nock.cleanAll();
+    sandbox.restore();
   });
 
   it('sets the cache up ready for use', () => {
@@ -91,6 +94,23 @@ describe('Max-Age', () => {
       .then(() => catbox.getAsync(bodySegment))
       .then((cached) => {
         assert.isNull(cached);
+      });
+  });
+
+  it('ignore cache lookup errors', () => {
+    const catbox = createCache();
+    sandbox.stub(catbox, 'get').yields(new Error('error'));
+
+    api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+    return httpTransport
+      .createClient()
+      .use(cache.maxAge(catbox, { ignoreCacheErrors: true }))
+      .get('http://www.example.com/')
+      .asBody()
+      .catch(() => assert.fail())
+      .then((body) => {
+        assert.equal(body, defaultResponse.body);
       });
   });
 
