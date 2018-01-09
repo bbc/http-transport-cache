@@ -182,7 +182,6 @@ describe('Stale-If-Error', () => {
 
   it('returns an error if the cache lookup fails', () => {
     const cache = createCache();
-    api.get('/').reply(500, defaultResponse, {});
     sandbox.stub(cache, 'get').yields(new Error('cache lookup error'));
 
     return requestWithCache(cache)
