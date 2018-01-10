@@ -78,6 +78,26 @@ describe('Cache', () => {
     });
   });
 
+  it('times out a request', () => {
+    const cache = createCache();
+    let cacheLookupComplete = false;
+    sandbox.stub(cache, 'get').callsFake(() => {
+      setTimeout(() => {
+        cacheLookupComplete = true;
+      }, 100);
+    });
+
+    return cache.startAsync().then(() => {
+      const timeout = 10;
+      return getFromCache(cache, SEGMENT, ID, { timeout })
+        .then(() => assert.fail())
+        .catch((err) => {
+          assert.isFalse(cacheLookupComplete);
+          assert.equal(err.message, `Cache timed out after ${timeout}`);
+        });
+    });
+  });
+
   it('returns a cache miss when "ignoreCacheErrors" is true', () => {
     const cache = createCache();
     sandbox.stub(cache, 'get').yields(new Error('cache lookup failed!'));
@@ -126,6 +146,26 @@ describe('Cache', () => {
           .catch(assert.ifError)
           .then(() => {
             assert.ok(cacheMiss);
+          });
+      });
+    });
+
+    it('emits a timeout event', () => {
+      const cache = createCache();
+      sandbox.stub(cache, 'get').callsFake(() => {
+        setTimeout(() => { }, 100);
+      });
+
+      let cacheTimeout = false;
+      events.on('cache.timeout', () => {
+        cacheTimeout = true;
+      });
+
+      return cache.startAsync().then(() => {
+        return getFromCache(cache, SEGMENT, ID, { timeout: 50 })
+          .then(assert.ifError)
+          .catch(() => {
+            assert.ok(cacheTimeout);
           });
       });
     });
