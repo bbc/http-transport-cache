@@ -114,7 +114,7 @@ describe('Max-Age', () => {
       });
   });
 
-  it('timeouts a cache lookup and requests from the system of record', () => {
+  it('timeouts a cache lookup', () => {
     const catbox = createCache();
     sandbox.stub(catbox, 'get').callsFake(() => {
       setTimeout(() => {
