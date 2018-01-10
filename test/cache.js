@@ -80,17 +80,19 @@ describe('Cache', () => {
 
   it('times out a request', () => {
     const cache = createCache();
+    let cacheLookupComplete = false;
     sandbox.stub(cache, 'get').callsFake(() => {
       setTimeout(() => {
-        throw new Error('Cache taking too long.');
-      }, 250);
+        cacheLookupComplete = true;
+      }, 100);
     });
 
     return cache.startAsync().then(() => {
-      const timeout = 50;
+      const timeout = 10;
       return getFromCache(cache, SEGMENT, ID, { timeout })
         .then(() => assert.fail())
         .catch((err) => {
+          assert.isFalse(cacheLookupComplete);
           assert.equal(err.message, `Cache timed out after ${timeout}`);
         });
     });

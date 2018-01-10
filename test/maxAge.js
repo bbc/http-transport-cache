@@ -116,14 +116,16 @@ describe('Max-Age', () => {
 
   it('timeouts a cache lookup', () => {
     const catbox = createCache();
+    let cacheLookupComplete = false;
+
     sandbox.stub(catbox, 'get').callsFake(() => {
       setTimeout(() => {
-        throw new Error('Cache taking too long.');
-      }, 200);
+        cacheLookupComplete = true;
+      }, 100);
     });
     api.get('/').reply(200, defaultResponse.body, defaultHeaders);
 
-    const timeout = 50;
+    const timeout = 10;
     return httpTransport
       .createClient()
       .use(cache.maxAge(catbox, { timeout }))
@@ -131,20 +133,24 @@ describe('Max-Age', () => {
       .asBody()
       .then(() => assert.fail())
       .catch((err) => {
+        assert.isFalse(cacheLookupComplete);
         assert.equal(err.message, `Cache timed out after ${timeout}`);
       });
   });
 
   it('ignores cache timeout error and requests from the system of record.', () => {
     const catbox = createCache();
+    let cacheLookupComplete = false;
+
     sandbox.stub(catbox, 'get').callsFake(() => {
       setTimeout(() => {
+        cacheLookupComplete = true;
         throw new Error('Cache taking too long.');
-      }, 200);
+      }, 100);
     });
     api.get('/').reply(200, defaultResponse.body, defaultHeaders);
 
-    const timeout = 50;
+    const timeout = 10;
     return httpTransport
       .createClient()
       .use(cache.maxAge(catbox, { timeout, ignoreCacheErrors: true }))
@@ -152,6 +158,7 @@ describe('Max-Age', () => {
       .asBody()
       .catch(() => assert.fail(null, null, 'Failed on timeout'))
       .then((body) => {
+        assert.isFalse(cacheLookupComplete);
         assert.equal(body, defaultResponse.body);
       });
   });
