@@ -114,6 +114,48 @@ describe('Max-Age', () => {
       });
   });
 
+  it('timeouts a cache lookup and requests from the system of record', () => {
+    const catbox = createCache();
+    sandbox.stub(catbox, 'get').callsFake(() => {
+      setTimeout(() => {
+        throw new Error('Cache taking too long.');
+      }, 200);
+    });
+    api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+    const timeout = 50;
+    return httpTransport
+      .createClient()
+      .use(cache.maxAge(catbox, { timeout }))
+      .get('http://www.example.com/')
+      .asBody()
+      .then(() => assert.fail())
+      .catch((err) => {
+        assert.equal(err.message, `Cache timed out after ${timeout}`);
+      });
+  });
+
+  it('ignores cache timeout error and requests from the system of record.', () => {
+    const catbox = createCache();
+    sandbox.stub(catbox, 'get').callsFake(() => {
+      setTimeout(() => {
+        throw new Error('Cache taking too long.');
+      }, 200);
+    });
+    api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+    const timeout = 50;
+    return httpTransport
+      .createClient()
+      .use(cache.maxAge(catbox, { timeout, ignoreCacheErrors: true }))
+      .get('http://www.example.com/')
+      .asBody()
+      .catch(() => assert.fail(null, null, 'Failed on timeout'))
+      .then((body) => {
+        assert.equal(body, defaultResponse.body);
+      });
+  });
+
   describe('cache keys', () => {
     it('keys cache entries by url', () => {
       const cache = createCache();
