@@ -71,6 +71,7 @@ Both `maxage` and `staleIfError` accept an options object.
 |Property|Description|
 |----|-----------|
 |`ignoreCacheErrors`| `cache.maxAge` will return a cache miss when this property is `true`. Setting this property true for `cache.staleIfError` will rethrow the original error (not the cache lookup error). `ignoreCacheErrors` is `false` by default. |
+|`timeout`|Timeouts out a cache lookup after a specified number of ms|
 
 ## Cache Key Structure
  
