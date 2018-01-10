@@ -145,7 +145,6 @@ describe('Max-Age', () => {
     sandbox.stub(catbox, 'get').callsFake(() => {
       setTimeout(() => {
         cacheLookupComplete = true;
-        throw new Error('Cache taking too long.');
       }, 100);
     });
     api.get('/').reply(200, defaultResponse.body, defaultHeaders);
