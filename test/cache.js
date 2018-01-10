@@ -78,6 +78,24 @@ describe('Cache', () => {
     });
   });
 
+  it('times out a request', () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'get').callsFake(() => {
+      setTimeout(() => {
+        throw new Error('Cache taking too long.');
+      }, 250);
+    });
+
+    return cache.startAsync().then(() => {
+      const timeout = 50;
+      return getFromCache(cache, SEGMENT, ID, { timeout })
+        .then(() => assert.fail())
+        .catch((err) => {
+          assert.equal(err.message, `Cache timed out after ${timeout}`);
+        });
+    });
+  });
+
   it('returns a cache miss when "ignoreCacheErrors" is true', () => {
     const cache = createCache();
     sandbox.stub(cache, 'get').yields(new Error('cache lookup failed!'));
