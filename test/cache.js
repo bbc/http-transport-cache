@@ -150,6 +150,26 @@ describe('Cache', () => {
       });
     });
 
+    it('emits a timeout event', () => {
+      const cache = createCache();
+      sandbox.stub(cache, 'get').callsFake(() => {
+        setTimeout(() => { }, 100);
+      });
+
+      let cacheTimeout = false;
+      events.on('cache.timeout', () => {
+        cacheTimeout = true;
+      });
+
+      return cache.startAsync().then(() => {
+        return getFromCache(cache, SEGMENT, ID, { timeout: 50 })
+          .then(assert.ifError)
+          .catch(() => {
+            assert.ok(cacheTimeout);
+          });
+      });
+    });
+
     it('emits a cache error event', () => {
       const cache = createCache();
       sandbox.stub(cache, 'get').yields(new Error('error'));
