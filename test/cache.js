@@ -113,6 +113,27 @@ describe('Cache', () => {
   });
 
   describe('events', () => {
+    it('emits events with the cache id when present', () => {
+      const cache = createCache();
+      cache.name = 'memory';
+
+      let cacheHit = false;
+      events.on('cache.memory.hit', () => {
+        cacheHit = true;
+      });
+
+      return cache
+        .startAsync()
+        .then(() => cache.setAsync(bodySegment, cachedResponse, 600))
+        .then(() => {
+          return getFromCache(cache, SEGMENT, ID)
+            .catch(assert.ifError)
+            .then(() => {
+              assert.ok(cacheHit);
+            });
+        });
+    });
+
     it('emits a cache hit event', () => {
       const cache = createCache();
 
