@@ -97,6 +97,31 @@ describe('Max-Age', () => {
       });
   });
 
+  it('does not create cache entries for items fetched from another cache', async () => {
+    const nearCache = createCache();
+    const farCache = createCache();
+
+    api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+    const client = httpTransport.createClient();
+
+    // populate the far-away cache first
+    await client
+      .use(cache.maxAge(farCache))
+      .get('http://www.example.com/')
+      .asResponse();
+
+    // response will originate from the far-away cache
+    await client
+      .use(cache.maxAge(nearCache))
+      .use(cache.maxAge(farCache))
+      .get('http://www.example.com/')
+      .asResponse();
+
+    const cachedItem = await nearCache.getAsync(bodySegment);
+    assert.isNull(cachedItem);
+  });
+
   it('ignore cache lookup errors', () => {
     const catbox = createCache();
     sandbox.stub(catbox, 'get').yields(new Error('error'));
