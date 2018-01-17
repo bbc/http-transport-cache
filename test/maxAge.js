@@ -41,12 +41,13 @@ function createCache() {
   return cache;
 }
 
-function createCacheClient(catbox) {
-  return httpTransport.createClient().use(cache.maxAge(catbox));
+function createCacheClient(catbox, opts) {
+  return httpTransport.createClient()
+    .use(cache.maxAge(catbox, opts));
 }
 
-function requestWithCache(catbox) {
-  return createCacheClient(catbox)
+function requestWithCache(catbox, opts) {
+  return createCacheClient(catbox, opts)
     .get('http://www.example.com/')
     .asResponse();
 }
@@ -185,6 +186,93 @@ describe('Max-Age', () => {
         assert.isFalse(cacheLookupComplete);
         assert.equal(body, defaultResponse.body);
       });
+  });
+
+  describe('Stale while revalidate', () => {
+    it('increases the max-age by the stale-while-revalidate value', () => {
+      const cache = createCache();
+      sandbox.stub(cache, 'set').yields();
+
+      const maxage = 60;
+      const swr = maxage * 2;
+      api
+        .get('/')
+        .reply(200, defaultResponse.body, { 'cache-control': `max-age=${maxage},stale-while-revalidate=${swr}` });
+
+      return requestWithCache(cache, { 'stale-while-revalidate': true })
+        .then(() => cache.getAsync(bodySegment))
+        .then(() => {
+          sinon.assert.calledWith(cache.set, sinon.match.object, sinon.match.object, (maxage + swr) * 1000);
+        });
+    });
+
+    it.only('refreshes cache in the background', async () => {
+      const cache = createCache();
+
+      const maxage = 1;
+      const swr = maxage * 2;
+      api
+        .get('/')
+        .times(2)
+        .reply(200, defaultResponse.body, { 'cache-control': `max-age=${maxage},stale-while-revalidate=${swr}` });
+
+      const fn = sinon.spy();
+      const opts = {
+        'stale-while-revalidate': true,
+        refresh: async () => {
+          fn();
+        }
+      };
+
+      // populate cache
+      await requestWithCache(cache, opts);
+
+      return bluebird
+        .delay((maxage * 1000) + 20) // ensure previous cache entry has exired (based on original max-age value. Should be stale.)
+        .then(() => {
+          return requestWithCache(cache, opts)
+            .then((res) => {
+              sinon.assert.callCount(fn, 1);
+              assert.equal(res.body, defaultResponse.body);
+            });
+        });
+    });
+
+    it.skip('serves a stale response when the "max-age" has expired', async () => {
+      const cache = createCache();
+
+      const maxage = 1;
+      const swr = maxage * 2;
+      api
+        .get('/')
+        .reply(200, defaultResponse.body, { 'cache-control': `max-age=${maxage},stale-while-revalidate=${swr}` });
+
+      const fn = sinon.spy();
+      const opts = {
+        'stale-while-revalidate': true,
+        refresh: () => {
+          fn();
+        }
+      };
+
+      // populate cache
+      await requestWithCache(cache, opts);
+
+      return bluebird
+        .delay((maxage * 1000) + 20) // ensure previous cache entry has exired (based on original max-age value. Should be stale.)
+        .then(() => {
+          return requestWithCache(cache, opts)
+            .then((res) => {
+              sinon.assert.callCount(fn, 1);
+              assert.equal(res.body, defaultResponse.body);
+            });
+        });
+    });
+
+    it('does not use stale-while-revalidate is set to 0');
+    it('does not use stale-while-revalidate if disabled');
+    it('disallows multiple refreshes for the same request at a time');
+    it('returns a cache miss if the stale period has expired and the refresh has not completed');
   });
 
   describe('cache keys', () => {
