@@ -99,7 +99,8 @@ describe('Max-Age', () => {
       });
   });
 
-  it('does not create cache entries for items fetched from another cache', async () => {
+  it('creates cache entries for item fetcher from another cache with the correct ttl', async () => {
+
     const nearCache = createCache();
     const farCache = createCache();
 
@@ -113,7 +114,9 @@ describe('Max-Age', () => {
       .get('http://www.example.com/')
       .asResponse();
 
-    // response will originate from the far-away cache
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Populate the near cache
     await client
       .use(cache.maxAge(nearCache))
       .use(cache.maxAge(farCache))
@@ -121,7 +124,8 @@ describe('Max-Age', () => {
       .asResponse();
 
     const cachedItem = await nearCache.getAsync(bodySegment);
-    assert.isNull(cachedItem);
+
+    assert.isBelow(cachedItem.ttl, 59950);
   });
 
   it('ignore cache lookup errors', () => {
@@ -190,7 +194,6 @@ describe('Max-Age', () => {
   });
 
   describe('Stale while revalidate', () => {
-
     function nockAPI(maxage, swr) {
       api
         .get('/')
@@ -217,7 +220,7 @@ describe('Max-Age', () => {
       const swr = maxage * 2;
       nockAPI(maxage, swr);
 
-      return requestWithCache(cache, { 'stale-while-revalidate': true })
+      return requestWithCache(cache, { 'staleWhileRevalidate': true })
         .then(() => cache.getAsync(bodySegment))
         .then(() => {
           sinon.assert.calledWith(cache.set, sinon.match.object, sinon.match.object, (maxage + swr) * 1000);
@@ -232,7 +235,7 @@ describe('Max-Age', () => {
       nockAPI(maxage, swr);
 
       const opts = {
-        'stale-while-revalidate': true,
+        'staleWhileRevalidate': true,
         refresh: async () => {
           return bluebird.resolve(createResponse(maxage, swr));
         }
@@ -263,7 +266,7 @@ describe('Max-Age', () => {
       nockAPI(maxage, swr);
 
       const opts = {
-        'stale-while-revalidate': true,
+        'staleWhileRevalidate': true,
         refresh: async () => {
           return bluebird.resolve(createResponse(maxage, swr));
         }
@@ -293,7 +296,7 @@ describe('Max-Age', () => {
       const swr = 0;
       nockAPI(maxage, swr);
 
-      return requestWithCache(cache, { 'stale-while-revalidate': true })
+      return requestWithCache(cache, { 'staleWhileRevalidate': true })
         .then(() => cache.getAsync(bodySegment))
         .then(() => {
           sinon.assert.calledWith(cache.set, sinon.match.object, sinon.match.object, maxage * 1000);
@@ -327,7 +330,7 @@ describe('Max-Age', () => {
 
       let called = 0;
       const opts = {
-        'stale-while-revalidate': true,
+        'staleWhileRevalidate': true,
         refresh: async () => {
           called++;
           return bluebird.resolve(createResponse(maxage, swr));
@@ -361,7 +364,7 @@ describe('Max-Age', () => {
 
       let called = 0;
       const opts = {
-        'stale-while-revalidate': true,
+        'staleWhileRevalidate': true,
         refresh: async () => {
           called++;
           return bluebird.reject(new Error('BORKED!'));
