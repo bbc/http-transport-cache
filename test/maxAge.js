@@ -258,37 +258,74 @@ describe('Max-Age', () => {
     it('sets correct TTL when storing refresh response', async () => {
       const cache = createCache();
 
-      const maxage = 1;
-      const swr = maxage * 2;
+      const maxAge = 1;
+      const swr = maxAge * 2;
       const delay = 50;
       const tolerance = 50;
 
-      nockAPI(maxage, swr);
+      nockAPI(maxAge, swr);
 
       const opts = {
         'staleWhileRevalidate': true,
         refresh: async () => {
-          return bluebird.resolve(createResponse(maxage, swr));
+          return bluebird.resolve(createResponse(maxAge, swr));
         }
       };
 
       await requestWithCache(cache, opts);
 
       return bluebird
-        .delay((maxage * 1000))
+        .delay((maxAge * 1000))
         .then(() => {
           return requestWithCache(cache, opts)
             .then(() => bluebird.delay(delay))
             .then(() => cache.getAsync(bodySegment))
             .then((cached) => {
               const ttl = cached.ttl;
-              assert(ttl < maxage * 1000);
-              assert(ttl > (maxage * 1000) - delay - tolerance);
+              assert(ttl < maxAge * 1000);
+              assert(ttl > (maxAge * 1000) - delay - tolerance);
             });
         });
     });
 
-    it('does not use stale-while-revalidate is set to 0', () => {
+    it('sets correct TTL when storing a cached response', async () => {
+      const maxAge = 10;
+      const swr = maxAge * 2;
+
+      const opts = {
+        'staleWhileRevalidate': true,
+        refresh: async () => {
+          return bluebird.resolve(createResponse(maxAge, swr));
+        }
+      };
+
+      const nearCache = createCache();
+      const farCache = createCache();
+
+      api.get('/').reply(200, defaultResponse.body, { 'cache-control': `max-age=${maxAge},stale-while-revalidate=${swr}` });
+
+      const client = httpTransport.createClient();
+
+      // populate the far-away cache first
+      await client
+        .use(cache.maxAge(farCache, opts))
+        .get('http://www.example.com/')
+        .asResponse();
+
+      await new Promise((resolve) => setTimeout(resolve, 101));
+
+      // Populate the near cache
+      await client
+        .use(cache.maxAge(nearCache, opts))
+        .use(cache.maxAge(farCache, opts))
+        .get('http://www.example.com/')
+        .asResponse();
+
+      const cachedItem = await nearCache.getAsync(bodySegment);
+      assert.isBelow(cachedItem.ttl, 29900);
+    });
+
+    it('does not use stale-while-revalidate when set to 0', () => {
       const cache = createCache();
       sandbox.stub(cache, 'set').yields();
 
