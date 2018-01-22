@@ -1,5 +1,6 @@
 'use strict';
 
+const _ = require('lodash');
 const assert = require('chai').assert;
 const httpTransport = require('@bbc/http-transport');
 const Catbox = require('catbox');
@@ -41,12 +42,13 @@ function createCache() {
   return cache;
 }
 
-function createCacheClient(catbox) {
-  return httpTransport.createClient().use(cache.maxAge(catbox));
+function createCacheClient(catbox, opts) {
+  return httpTransport.createClient()
+    .use(cache.maxAge(catbox, opts));
 }
 
-function requestWithCache(catbox) {
-  return createCacheClient(catbox)
+function requestWithCache(catbox, opts) {
+  return createCacheClient(catbox, opts)
     .get('http://www.example.com/')
     .asResponse();
 }
@@ -189,6 +191,231 @@ describe('Max-Age', () => {
         assert.isFalse(cacheLookupComplete);
         assert.equal(body, defaultResponse.body);
       });
+  });
+
+  describe('Stale while revalidate', () => {
+    function nockAPI(maxage, swr) {
+      api
+        .get('/')
+        .reply(200, defaultResponse.body, { 'cache-control': `max-age=${maxage},stale-while-revalidate=${swr}` });
+    }
+
+    function createResponse(maxage, swr) {
+      const fakeResponse = _.clone(defaultResponse);
+      fakeResponse.body = 'We ALL love jonty';
+
+      return {
+        headers: { 'cache-control': `max-age=${maxage},stale-while-revalidate=${swr}` },
+        toJSON: () => {
+          return fakeResponse;
+        }
+      };
+    }
+
+    it('increases the max-age by the stale-while-revalidate value', () => {
+      const cache = createCache();
+      sandbox.stub(cache, 'set').yields();
+
+      const maxage = 60;
+      const swr = maxage * 2;
+      nockAPI(maxage, swr);
+
+      return requestWithCache(cache, { 'staleWhileRevalidate': true })
+        .then(() => cache.getAsync(bodySegment))
+        .then(() => {
+          sinon.assert.calledWith(cache.set, sinon.match.object, sinon.match.object, (maxage + swr) * 1000);
+        });
+    });
+
+    it('updates cache on successful refresh', async () => {
+      const cache = createCache();
+
+      const maxage = 1;
+      const swr = maxage * 2;
+      nockAPI(maxage, swr);
+
+      const opts = {
+        'staleWhileRevalidate': true,
+        refresh: async () => {
+          return bluebird.resolve(createResponse(maxage, swr));
+        }
+      };
+
+      await requestWithCache(cache, opts);
+
+      return bluebird
+        .delay((maxage * 1000))
+        .then(() => {
+          return requestWithCache(cache, opts)
+            .then(() => bluebird.delay(50))
+            .then(() => cache.getAsync(bodySegment))
+            .then((cached) => {
+              assert.equal(cached.item.body, 'We ALL love jonty');
+            });
+        });
+    });
+
+    it('sets correct TTL when storing refresh response', async () => {
+      const cache = createCache();
+
+      const maxAge = 1;
+      const swr = maxAge * 2;
+      const delay = 50;
+      const tolerance = 50;
+
+      nockAPI(maxAge, swr);
+
+      const opts = {
+        'staleWhileRevalidate': true,
+        refresh: async () => {
+          return bluebird.resolve(createResponse(maxAge, swr));
+        }
+      };
+
+      await requestWithCache(cache, opts);
+
+      return bluebird
+        .delay((maxAge * 1000))
+        .then(() => {
+          return requestWithCache(cache, opts)
+            .then(() => bluebird.delay(delay))
+            .then(() => cache.getAsync(bodySegment))
+            .then((cached) => {
+              const ttl = cached.ttl;
+              assert(ttl < maxAge * 1000);
+              assert(ttl > (maxAge * 1000) - delay - tolerance);
+            });
+        });
+    });
+
+    it('sets correct TTL when storing a cached response', async () => {
+      const maxAge = 10;
+      const swr = maxAge * 2;
+
+      const opts = {
+        'staleWhileRevalidate': true,
+        refresh: async () => {
+          return bluebird.resolve(createResponse(maxAge, swr));
+        }
+      };
+
+      const nearCache = createCache();
+      const farCache = createCache();
+
+      api.get('/').reply(200, defaultResponse.body, { 'cache-control': `max-age=${maxAge},stale-while-revalidate=${swr}` });
+
+      const client = httpTransport.createClient();
+
+      // populate the far-away cache first
+      await client
+        .use(cache.maxAge(farCache, opts))
+        .get('http://www.example.com/')
+        .asResponse();
+
+      await new Promise((resolve) => setTimeout(resolve, 101));
+
+      // Populate the near cache
+      await client
+        .use(cache.maxAge(nearCache, opts))
+        .use(cache.maxAge(farCache, opts))
+        .get('http://www.example.com/')
+        .asResponse();
+
+      const cachedItem = await nearCache.getAsync(bodySegment);
+      assert.isBelow(cachedItem.ttl, 29900);
+    });
+
+    it('does not use stale-while-revalidate when set to 0', () => {
+      const cache = createCache();
+      sandbox.stub(cache, 'set').yields();
+
+      const maxage = 1;
+      const swr = 0;
+      nockAPI(maxage, swr);
+
+      return requestWithCache(cache, { 'staleWhileRevalidate': true })
+        .then(() => cache.getAsync(bodySegment))
+        .then(() => {
+          sinon.assert.calledWith(cache.set, sinon.match.object, sinon.match.object, maxage * 1000);
+        });
+    });
+
+    it('does not use stale-while-revalidate if disabled', () => {
+      const cache = createCache();
+      sandbox.stub(cache, 'set').yields();
+
+      const maxage = 1;
+      const swr = 7200;
+      nockAPI(maxage, swr);
+
+      return requestWithCache(cache, { 'stale-while-revalidate': false })
+        .then(() => cache.getAsync(bodySegment))
+        .then(() => {
+          sinon.assert.calledWith(cache.set, sinon.match.object, sinon.match.object, maxage * 1000);
+        });
+    });
+
+    it('disallows multiple refreshes for the same request at a time', async () => {
+      const cache = createCache();
+
+      const maxage = 1;
+      const swr = maxage * 2;
+      api
+        .get('/')
+        .times(3)
+        .reply(200, defaultResponse.body, { 'cache-control': `max-age=${maxage},stale-while-revalidate=${swr}` });
+
+      let called = 0;
+      const opts = {
+        'staleWhileRevalidate': true,
+        refresh: async () => {
+          called++;
+          return bluebird.resolve(createResponse(maxage, swr));
+        }
+      };
+
+      await requestWithCache(cache, opts);
+      await bluebird.delay(maxage * 1000);
+
+      const pending = [];
+      pending.push(requestWithCache(cache, opts));
+      pending.push(requestWithCache(cache, opts));
+
+      await Promise.all(pending);
+
+      assert.equal(called, 1);
+    });
+
+    it('ensures that entries are deleted on error', async () => {
+      const cache = createCache();
+
+      const maxage = 1;
+      const swr = maxage * 2;
+      api
+        .get('/')
+        .times(3)
+        .reply(200, defaultResponse.body, { 'cache-control': `max-age=${maxage},stale-while-revalidate=${swr}` });
+
+      const fakeResponse = _.clone(defaultResponse);
+      fakeResponse.body = 'We ALL love jonty';
+
+      let called = 0;
+      const opts = {
+        'staleWhileRevalidate': true,
+        refresh: async () => {
+          called++;
+          return bluebird.reject(new Error('BORKED!'));
+        }
+      };
+
+      await requestWithCache(cache, opts);
+      await bluebird.delay(maxage * 1000);
+      await requestWithCache(cache, opts);
+      await bluebird.delay(50);
+      await requestWithCache(cache, opts);
+
+      assert.equal(called, 2);
+    });
   });
 
   describe('cache keys', () => {
