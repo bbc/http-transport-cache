@@ -12,7 +12,7 @@ const httpTransport = require('@bbc/http-transport');
 const toError = require('@bbc/http-transport-to-error');
 
 const cache = require('../');
-const events = require('../lib/cache').events;
+const events = require('../').events;
 
 const VERSION = require('../package').version;
 const api = nock('http://www.example.com');
@@ -270,6 +270,36 @@ describe('Stale-If-Error', () => {
       .startAsync()
       .then(() => cache.setAsync(bodySegment, cachedResponse, 7200))
       .then(() => requestWithCache(cache))
+      .then(() => {
+        assert.ok(cacheStale);
+      });
+  });
+
+  it('emits a stale cache event with cache name when present', () => {
+    const opts = {
+      name: 'ceych'
+    };
+
+    let cacheStale = false;
+    events.on('cache.ceych.stale', () => {
+      cacheStale = true;
+    });
+
+    const cachedResponse = {
+      body: 'http-transport',
+      headers: defaultHeaders,
+      elapsedTime: 40,
+      url: 'http://www.example.com/',
+      statusCode: 200
+    };
+    const cache = createCache();
+
+    api.get('/').reply(500, defaultResponse.body, {});
+
+    return cache
+      .startAsync()
+      .then(() => cache.setAsync(bodySegment, cachedResponse, 7200))
+      .then(() => requestWithCache(cache, opts))
       .then(() => {
         assert.ok(cacheStale);
       });

@@ -7,7 +7,8 @@ const bluebird = require('bluebird');
 const sinon = require('sinon');
 const sandbox = sinon.sandbox.create();
 
-const { getFromCache, storeInCache, events } = require('../lib/cache');
+const { getFromCache, storeInCache } = require('../lib/cache');
+const events = require('../').events;
 
 const SEGMENT = 'body';
 const VERSION = require('../package').version;
@@ -113,60 +114,27 @@ describe('Cache', () => {
   });
 
   describe('events', () => {
-    it('emits events with the cache id when present', () => {
+    it('emits events with the cache name when present', () => {
       const cache = createCache();
-      cache.name = 'memory';
-
-      let cacheHit = false;
-      events.on('cache.memory.hit', () => {
-        cacheHit = true;
+      sandbox.stub(cache, 'get').callsFake(() => {
+        setTimeout(() => { }, 100);
       });
 
-      return cache
-        .startAsync()
-        .then(() => cache.setAsync(bodySegment, cachedResponse, 600))
-        .then(() => {
-          return getFromCache(cache, SEGMENT, ID)
-            .catch(assert.ifError)
-            .then(() => {
-              assert.ok(cacheHit);
-            });
-        });
-    });
-
-    it('emits a cache hit event', () => {
-      const cache = createCache();
-
-      let cacheHit = false;
-      events.on('cache.hit', () => {
-        cacheHit = true;
+      let cacheTimeout = false;
+      events.on('cache.ceych.timeout', () => {
+        cacheTimeout = true;
       });
 
-      return cache
-        .startAsync()
-        .then(() => cache.setAsync(bodySegment, cachedResponse, 600))
-        .then(() => {
-          return getFromCache(cache, SEGMENT, ID)
-            .catch(assert.ifError)
-            .then(() => {
-              assert.ok(cacheHit);
-            });
-        });
-    });
-
-    it('emits a cache miss event', () => {
-      const cache = createCache();
-
-      let cacheMiss = false;
-      events.on('cache.miss', () => {
-        cacheMiss = true;
-      });
+      const opts = {
+        name: 'ceych',
+        timeout: 50
+      };
 
       return cache.startAsync().then(() => {
-        return getFromCache(cache, SEGMENT, ID)
-          .catch(assert.ifError)
-          .then(() => {
-            assert.ok(cacheMiss);
+        return getFromCache(cache, SEGMENT, ID, opts)
+          .then(assert.ifError)
+          .catch(() => {
+            assert.ok(cacheTimeout);
           });
       });
     });
