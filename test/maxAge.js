@@ -11,6 +11,7 @@ const sinon = require('sinon');
 
 const sandbox = sinon.sandbox.create();
 const cache = require('../');
+const events = require('../').events;
 
 const api = nock('http://www.example.com');
 
@@ -100,7 +101,6 @@ describe('Max-Age', () => {
   });
 
   it('creates cache entries for item fetcher from another cache with the correct ttl', async () => {
-
     const nearCache = createCache();
     const farCache = createCache();
 
@@ -547,5 +547,59 @@ describe('Max-Age', () => {
 
         return cache.drop(bodySegment);
       });
+  });
+
+  describe('Events', () => {
+    it('emits events with name when name option is present', () => {
+      const cache = createCache();
+      api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+      let cacheMiss = false;
+      events.on('cache.ceych.miss', () => {
+        cacheMiss = true;
+      });
+
+      const opts = {
+        name: 'ceych'
+      };
+
+      return requestWithCache(cache, opts)
+        .then(() => {
+          assert.ok(cacheMiss);
+        });
+    });
+
+    it('emits a cache miss event', () => {
+      const cache = createCache();
+      api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+      let cacheMiss = false;
+      events.on('cache.miss', () => {
+        cacheMiss = true;
+      });
+
+      return requestWithCache(cache)
+        .then(() => {
+          assert.ok(cacheMiss);
+        });
+    });
+
+    it('emits a cache hit event', () => {
+      const cache = createCache();
+      api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+      let cacheHit = false;
+      events.on('cache.hit', () => {
+        cacheHit = true;
+      });
+
+      return requestWithCache(cache)
+        .then(() => {
+          return requestWithCache(cache)
+            .then(() => {
+              assert.ok(cacheHit);
+            });
+        });
+    });
   });
 });

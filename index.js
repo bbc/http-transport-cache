@@ -2,7 +2,7 @@
 
 const maxAge = require('./lib/maxAge');
 const staleIfError = require('./lib/staleIfError');
-const events = require('./lib/cache').events;
+const events = require('./lib/events').emitter;
 
 module.exports = {
   maxAge,
