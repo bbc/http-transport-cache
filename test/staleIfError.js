@@ -3,7 +3,6 @@
 const assert = require('chai').assert;
 const Catbox = require('catbox');
 const Memory = require('catbox-memory');
-const bluebird = require('bluebird');
 const nock = require('nock');
 
 const sinon = require('sinon');
@@ -39,10 +38,7 @@ const bodySegment = {
 nock.disableNetConnect();
 
 function createCache() {
-  const cache = new Catbox.Client(new Memory());
-  bluebird.promisifyAll(cache);
-
-  return cache;
+  return new Catbox.Client(new Memory());
 }
 
 function requestWithCache(catbox, opts) {
@@ -60,16 +56,9 @@ describe('Stale-If-Error', () => {
     sandbox.restore();
   });
 
-  it('sets the cache up ready for use', () => {
-    const catbox = createCache();
-
-    cache.staleIfError(catbox);
-
-    assert(catbox.isReady());
-  });
-
-  it('stores cached values for the stale-if-error value', () => {
+  it('stores cached values for the stale-if-error value', async () => {
     const cache = createCache();
+    await cache.start();
 
     api.get('/').reply(200, defaultResponse.body, defaultHeaders);
 
@@ -77,31 +66,28 @@ describe('Stale-If-Error', () => {
     const staleIfError = 7200000;
     const expiry = Date.now() + maxAge + staleIfError;
 
-    return requestWithCache(cache)
-      .then(() => cache.getAsync(bodySegment))
-      .then((cached) => {
-        const actualExpiry = cached.ttl + cached.stored;
-        const differenceInExpires = actualExpiry - expiry;
+    await requestWithCache(cache);
+    const cached = await cache.get(bodySegment);
+    const actualExpiry = cached.ttl + cached.stored;
+    const differenceInExpires = actualExpiry - expiry;
 
-        assert.deepEqual(cached.item.body, defaultResponse.body);
-        assert(differenceInExpires < 1000 && differenceInExpires >= 0);
-      });
+    assert.deepEqual(cached.item.body, defaultResponse.body);
+    assert(differenceInExpires < 1000 && differenceInExpires >= 0);
   });
 
-  it('does not create cache entries for errors', () => {
+  it('does not create cache entries for errors', async () => {
     const catbox = createCache();
 
     api.get('/').reply(500, defaultResponse.body, defaultHeaders);
 
-    return httpTransport
+    await httpTransport
       .createClient()
       .use(cache.staleIfError(catbox))
       .get('http://www.example.com/')
-      .asResponse()
-      .then(() => catbox.getAsync(bodySegment))
-      .then((cached) => {
-        assert.isNull(cached);
-      });
+      .asResponse();
+
+    const cached = await catbox.get(bodySegment);
+    assert.isNull(cached);
   });
 
   it('does not create cache entries for items fetched from another cache', async () => {
@@ -125,21 +111,21 @@ describe('Stale-If-Error', () => {
       .get('http://www.example.com/')
       .asResponse();
 
-    const cachedItem = await nearCache.getAsync(bodySegment);
+    const cachedItem = await nearCache.get(bodySegment);
     assert.isNull(cachedItem);
   });
 
-  it('does not store if no cache-control', () => {
+  it('does not store if no cache-control', async () => {
     const cache = createCache();
 
     api.get('/').reply(200, defaultResponse);
 
-    return requestWithCache(cache)
-      .then(() => cache.getAsync(bodySegment))
-      .then((cached) => assert(!cached));
+    await requestWithCache(cache);
+    const cached = await cache.get(bodySegment);
+    assert(!cached);
   });
 
-  it('does not store if stale-if-error=0', () => {
+  it('does not store if stale-if-error=0', async () => {
     const cache = createCache();
 
     api.get('/').reply(200, defaultResponse, {
@@ -148,12 +134,12 @@ describe('Stale-If-Error', () => {
       }
     });
 
-    return requestWithCache(cache)
-      .then(() => cache.getAsync(bodySegment))
-      .then((cached) => assert(!cached));
+    await requestWithCache(cache);
+    const cached = await cache.get(bodySegment);
+    assert(!cached);
   });
 
-  it('stores even if no max-age', () => {
+  it('stores even if no max-age', async () => {
     const cache = createCache();
 
     api.get('/').reply(200, defaultResponse, {
@@ -162,12 +148,12 @@ describe('Stale-If-Error', () => {
       }
     });
 
-    return requestWithCache(cache)
-      .then(() => cache.getAsync(bodySegment))
-      .then((cached) => assert(!cached));
+    await requestWithCache(cache);
+    const cached = await cache.get(bodySegment);
+    assert(!cached);
   });
 
-  it('returns cached response if available when error response is returned', () => {
+  it('returns cached response if available when error response is returned', async () => {
     const cachedResponse = {
       body: 'http-transport',
       headers: defaultHeaders,
@@ -179,129 +165,125 @@ describe('Stale-If-Error', () => {
 
     api.get('/').reply(500, defaultResponse.body, {});
 
-    return cache
-      .startAsync()
-      .then(() => cache.setAsync(bodySegment, cachedResponse, 7200))
-      .then(() => requestWithCache(cache))
-      .then((res) => {
-        assert.equal(res.body, cachedResponse.body);
-        assert.deepEqual(res.headers, cachedResponse.headers);
-        assert.equal(res.elapsedTime, cachedResponse.elapsedTime);
-        assert.equal(res.url, cachedResponse.url);
-        assert.equal(res.statusCode, cachedResponse.statusCode);
+    await cache.start();
+    await cache.set(bodySegment, cachedResponse, 7200);
+    const res = await requestWithCache(cache);
 
-        return cache.drop(bodySegment);
-      });
+    assert.equal(res.body, cachedResponse.body);
+    assert.deepEqual(res.headers, cachedResponse.headers);
+    assert.equal(res.elapsedTime, cachedResponse.elapsedTime);
+    assert.equal(res.url, cachedResponse.url);
+    assert.equal(res.statusCode, cachedResponse.statusCode);
+
+    return cache.drop(bodySegment);
+  });
+});
+
+it('returns the original error if nothing in cache', async () => {
+  const cache = createCache();
+  api.get('/').reply(500, defaultResponse, {});
+
+  try {
+    await requestWithCache(cache);
+
+  } catch (err) {
+    return assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
+  }
+  assert.fail('Expected to throw');
+});
+
+it('returns an error if the cache lookup fails', async () => {
+  const cache = createCache();
+  sandbox.stub(cache, 'get').rejects(new Error('cache lookup error'));
+
+  try {
+    await requestWithCache(cache);
+
+  } catch (err) {
+    return assert.equal(err.message, 'cache lookup error');
+  }
+  assert.fail('Expected to throw');
+});
+
+it('returns the original error if "ignoreCacheErrors" is true', async () => {
+  const cache = createCache();
+  api.get('/').reply(500, defaultResponse, {});
+  sandbox.stub(cache, 'get').rejects(new Error('cache lookup error'));
+
+  try {
+    await requestWithCache(cache, { ignoreCacheErrors: true });
+  } catch (err) {
+    return assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
+  }
+  assert.fail('Expected to throw');
+});
+
+it('continues to the next middleware when there\'s an error and no error handler', async () => {
+  const catbox = createCache();
+
+  api.get('/').reply(500, defaultResponse.body, defaultHeaders);
+
+  let called = false;
+  await httpTransport
+    .createClient()
+    .use(cache.staleIfError(catbox))
+    .use((ctx, next) => {
+      called = true;
+      return next();
+    })
+    .get('http://www.example.com/')
+    .asResponse();
+
+  assert.ok(called);
+});
+
+it('emits a stale cache event when returning stale', async () => {
+  let cacheStale = false;
+  events.on('cache.stale', () => {
+    cacheStale = true;
   });
 
-  it('returns the original error if nothing in cache', () => {
-    const cache = createCache();
-    api.get('/').reply(500, defaultResponse, {});
+  const cachedResponse = {
+    body: 'http-transport',
+    headers: defaultHeaders,
+    elapsedTime: 40,
+    url: 'http://www.example.com/',
+    statusCode: 200
+  };
+  const cache = createCache();
 
-    return requestWithCache(cache)
-      .then(() => assert(false, 'Promise should have failed'))
-      .catch((err) => {
-        assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
-      });
+  api.get('/').reply(500, defaultResponse.body, {});
+
+  await cache.start();
+  await cache.set(bodySegment, cachedResponse, 7200);
+  await requestWithCache(cache);
+  assert.ok(cacheStale);
+});
+
+it('emits a stale cache event with cache name when present', async () => {
+  const opts = {
+    name: 'ceych'
+  };
+
+  let cacheStale = false;
+  events.on('cache.ceych.stale', () => {
+    cacheStale = true;
   });
 
-  it('returns an error if the cache lookup fails', () => {
-    const cache = createCache();
-    sandbox.stub(cache, 'get').yields(new Error('cache lookup error'));
+  const cachedResponse = {
+    body: 'http-transport',
+    headers: defaultHeaders,
+    elapsedTime: 40,
+    url: 'http://www.example.com/',
+    statusCode: 200
+  };
+  const cache = createCache();
 
-    return requestWithCache(cache)
-      .then(() => assert(false, 'Promise should have failed'))
-      .catch((err) => {
-        assert.equal(err.message, 'cache lookup error');
-      });
-  });
+  api.get('/').reply(500, defaultResponse.body, {});
 
-  it('returns the original error if "ignoreCacheErrors" is true', () => {
-    const cache = createCache();
-    api.get('/').reply(500, defaultResponse, {});
-    sandbox.stub(cache, 'get').yields(new Error('cache lookup error'));
+  await cache.start();
+  await cache.set(bodySegment, cachedResponse, 7200);
+  await requestWithCache(cache, opts);
 
-    return requestWithCache(cache, { ignoreCacheErrors: true })
-      .then(() => assert(false, 'Promise should have failed'))
-      .catch((err) => {
-        assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
-      });
-  });
-
-  it('continues to the next middleware when there\'s an error and no error handler', () => {
-    const catbox = createCache();
-
-    api.get('/').reply(500, defaultResponse.body, defaultHeaders);
-
-    let called = false;
-
-    return httpTransport
-      .createClient()
-      .use(cache.staleIfError(catbox))
-      .use((ctx, next) => {
-        called = true;
-        return next();
-      })
-      .get('http://www.example.com/')
-      .asResponse()
-      .then(() => {
-        assert.ok(called);
-      });
-  });
-
-  it('emits a stale cache event when returning stale', () => {
-    let cacheStale = false;
-    events.on('cache.stale', () => {
-      cacheStale = true;
-    });
-
-    const cachedResponse = {
-      body: 'http-transport',
-      headers: defaultHeaders,
-      elapsedTime: 40,
-      url: 'http://www.example.com/',
-      statusCode: 200
-    };
-    const cache = createCache();
-
-    api.get('/').reply(500, defaultResponse.body, {});
-
-    return cache
-      .startAsync()
-      .then(() => cache.setAsync(bodySegment, cachedResponse, 7200))
-      .then(() => requestWithCache(cache))
-      .then(() => {
-        assert.ok(cacheStale);
-      });
-  });
-
-  it('emits a stale cache event with cache name when present', () => {
-    const opts = {
-      name: 'ceych'
-    };
-
-    let cacheStale = false;
-    events.on('cache.ceych.stale', () => {
-      cacheStale = true;
-    });
-
-    const cachedResponse = {
-      body: 'http-transport',
-      headers: defaultHeaders,
-      elapsedTime: 40,
-      url: 'http://www.example.com/',
-      statusCode: 200
-    };
-    const cache = createCache();
-
-    api.get('/').reply(500, defaultResponse.body, {});
-
-    return cache
-      .startAsync()
-      .then(() => cache.setAsync(bodySegment, cachedResponse, 7200))
-      .then(() => requestWithCache(cache, opts))
-      .then(() => {
-        assert.ok(cacheStale);
-      });
-  });
+  assert.ok(cacheStale);
 });

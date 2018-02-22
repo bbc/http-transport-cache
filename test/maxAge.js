@@ -37,10 +37,7 @@ const bodySegment = {
 nock.disableNetConnect();
 
 function createCache() {
-  const cache = new Catbox.Client(new Memory());
-  bluebird.promisifyAll(cache);
-
-  return cache;
+  return new Catbox.Client(new Memory());
 }
 
 function createCacheClient(catbox, opts) {
@@ -48,7 +45,7 @@ function createCacheClient(catbox, opts) {
     .use(cache.maxAge(catbox, opts));
 }
 
-function requestWithCache(catbox, opts) {
+async function requestWithCache(catbox, opts) {
   return createCacheClient(catbox, opts)
     .get('http://www.example.com/')
     .asResponse();
@@ -60,44 +57,35 @@ describe('Max-Age', () => {
     sandbox.restore();
   });
 
-  it('sets the cache up ready for use', () => {
-    const catbox = createCache();
-    cache.maxAge(catbox);
-
-    assert(catbox.isReady());
-  });
-
-  it('stores cached values for the max-age value', () => {
+  it('stores cached values for the max-age value', async () => {
     const cache = createCache();
     api.get('/').reply(200, defaultResponse.body, defaultHeaders);
 
     const expiry = Date.now() + 60000;
 
-    return requestWithCache(cache)
-      .then(() => cache.getAsync(bodySegment))
-      .then((cached) => {
-        const actualExpiry = cached.ttl + cached.stored;
-        const differenceInExpires = actualExpiry - expiry;
+    await requestWithCache(cache);
+    const cached = await cache.get(bodySegment);
+    const actualExpiry = cached.ttl + cached.stored;
+    const differenceInExpires = actualExpiry - expiry;
 
-        assert.deepEqual(cached.item.body, defaultResponse.body);
-        assert(differenceInExpires < 1000);
-      });
+    assert.deepEqual(cached.item.body, defaultResponse.body);
+    assert(differenceInExpires < 1000);
   });
 
-  it('does not create cache entries for errors', () => {
+  it('does not create cache entries for errors', async () => {
     const catbox = createCache();
 
     api.get('/').reply(500, defaultResponse.body, defaultHeaders);
 
-    return httpTransport
+    await httpTransport
       .createClient()
       .use(cache.maxAge(catbox))
       .get('http://www.example.com/')
-      .asResponse()
-      .then(() => catbox.getAsync(bodySegment))
-      .then((cached) => {
-        assert.isNull(cached);
-      });
+      .asResponse();
+
+    const cached = await catbox.get(bodySegment);
+
+    assert.isNull(cached);
   });
 
   it('creates cache entries for item fetcher from another cache with the correct ttl', async () => {
@@ -123,74 +111,73 @@ describe('Max-Age', () => {
       .get('http://www.example.com/')
       .asResponse();
 
-    const cachedItem = await nearCache.getAsync(bodySegment);
+    const cachedItem = await nearCache.get(bodySegment);
 
     assert.isBelow(cachedItem.ttl, 59950);
   });
 
-  it('ignore cache lookup errors', () => {
+  it('ignore cache lookup errors', async () => {
     const catbox = createCache();
-    sandbox.stub(catbox, 'get').yields(new Error('error'));
+    sandbox.stub(catbox, 'get').rejects(new Error('error'));
 
     api.get('/').reply(200, defaultResponse.body, defaultHeaders);
 
-    return httpTransport
+    const body = await httpTransport
       .createClient()
       .use(cache.maxAge(catbox, { ignoreCacheErrors: true }))
       .get('http://www.example.com/')
-      .asBody()
-      .catch(() => assert.fail())
-      .then((body) => {
-        assert.equal(body, defaultResponse.body);
-      });
+      .asBody();
+
+    assert.equal(body, defaultResponse.body);
   });
 
-  it('timeouts a cache lookup', () => {
+  it('timeouts a cache lookup', async () => {
+    const catbox = createCache();
+    const cacheLookupComplete = false;
+    api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+    sandbox.stub(catbox, 'get').callsFake(async () => {
+      return await bluebird.delay(100);
+    });
+
+    const timeout = 10;
+    try {
+      await httpTransport
+        .createClient()
+        .use(cache.maxAge(catbox, { timeout }))
+        .get('http://www.example.com/')
+        .asBody();
+    } catch (err) {
+      assert.isFalse(cacheLookupComplete);
+      return assert.equal(err.message, `Cache timed out after ${timeout}`);
+    }
+    assert.fail('Expected to throw');
+  });
+
+  it('ignores cache timeout error and requests from the system of record.', async () => {
     const catbox = createCache();
     let cacheLookupComplete = false;
 
     sandbox.stub(catbox, 'get').callsFake(() => {
-      setTimeout(() => {
+      return bluebird.delay(100).then(() => {
         cacheLookupComplete = true;
-      }, 100);
+      });
     });
     api.get('/').reply(200, defaultResponse.body, defaultHeaders);
 
     const timeout = 10;
-    return httpTransport
-      .createClient()
-      .use(cache.maxAge(catbox, { timeout }))
-      .get('http://www.example.com/')
-      .asBody()
-      .then(() => assert.fail())
-      .catch((err) => {
-        assert.isFalse(cacheLookupComplete);
-        assert.equal(err.message, `Cache timed out after ${timeout}`);
-      });
-  });
-
-  it('ignores cache timeout error and requests from the system of record.', () => {
-    const catbox = createCache();
-    let cacheLookupComplete = false;
-
-    sandbox.stub(catbox, 'get').callsFake(() => {
-      setTimeout(() => {
-        cacheLookupComplete = true;
-      }, 100);
-    });
-    api.get('/').reply(200, defaultResponse.body, defaultHeaders);
-
-    const timeout = 10;
-    return httpTransport
-      .createClient()
-      .use(cache.maxAge(catbox, { timeout, ignoreCacheErrors: true }))
-      .get('http://www.example.com/')
-      .asBody()
-      .catch(() => assert.fail(null, null, 'Failed on timeout'))
-      .then((body) => {
-        assert.isFalse(cacheLookupComplete);
-        assert.equal(body, defaultResponse.body);
-      });
+    let body;
+    try {
+      body = await httpTransport
+        .createClient()
+        .use(cache.maxAge(catbox, { timeout, ignoreCacheErrors: true }))
+        .get('http://www.example.com/')
+        .asBody();
+    } catch (err) {
+      return assert.fail(null, null, 'Failed on timeout');
+    }
+    assert.isFalse(cacheLookupComplete);
+    assert.equal(body, defaultResponse.body);
   });
 
   describe('Stale while revalidate', () => {
@@ -212,19 +199,17 @@ describe('Max-Age', () => {
       };
     }
 
-    it('increases the max-age by the stale-while-revalidate value', () => {
+    it('increases the max-age by the stale-while-revalidate value', async () => {
       const cache = createCache();
-      sandbox.stub(cache, 'set').yields();
+      sandbox.stub(cache, 'set').resolves();
 
       const maxage = 60;
       const swr = maxage * 2;
       nockAPI(maxage, swr);
 
-      return requestWithCache(cache, { 'staleWhileRevalidate': true })
-        .then(() => cache.getAsync(bodySegment))
-        .then(() => {
-          sinon.assert.calledWith(cache.set, sinon.match.object, sinon.match.object, (maxage + swr) * 1000);
-        });
+      await requestWithCache(cache, { 'staleWhileRevalidate': true });
+
+      sinon.assert.calledWith(cache.set, sinon.match.object, sinon.match.object, (maxage + swr) * 1000);
     });
 
     it('updates cache on successful refresh', async () => {
@@ -242,17 +227,12 @@ describe('Max-Age', () => {
       };
 
       await requestWithCache(cache, opts);
+      await bluebird.delay((maxage * 1000));
+      await requestWithCache(cache, opts);
+      await bluebird.delay(50);
+      const cached = await cache.get(bodySegment);
 
-      return bluebird
-        .delay((maxage * 1000))
-        .then(() => {
-          return requestWithCache(cache, opts)
-            .then(() => bluebird.delay(50))
-            .then(() => cache.getAsync(bodySegment))
-            .then((cached) => {
-              assert.equal(cached.item.body, 'We ALL love jonty');
-            });
-        });
+      assert.equal(cached.item.body, 'We ALL love jonty');
     });
 
     it('sets correct TTL when storing refresh response', async () => {
@@ -273,19 +253,13 @@ describe('Max-Age', () => {
       };
 
       await requestWithCache(cache, opts);
-
-      return bluebird
-        .delay((maxAge * 1000))
-        .then(() => {
-          return requestWithCache(cache, opts)
-            .then(() => bluebird.delay(delay))
-            .then(() => cache.getAsync(bodySegment))
-            .then((cached) => {
-              const ttl = cached.ttl;
-              assert(ttl < maxAge * 1000);
-              assert(ttl > (maxAge * 1000) - delay - tolerance);
-            });
-        });
+      await bluebird.delay(maxAge * 1000);
+      await requestWithCache(cache, opts);
+      await bluebird.delay(delay);
+      const cached = await cache.get(bodySegment);
+      const ttl = cached.ttl;
+      assert(ttl < maxAge * 1000);
+      assert(ttl > (maxAge * 1000) - delay - tolerance);
     });
 
     it('sets correct TTL when storing a cached response', async () => {
@@ -321,38 +295,34 @@ describe('Max-Age', () => {
         .get('http://www.example.com/')
         .asResponse();
 
-      const cachedItem = await nearCache.getAsync(bodySegment);
+      const cachedItem = await nearCache.get(bodySegment);
       assert.isBelow(cachedItem.ttl, 29900);
     });
 
-    it('does not use stale-while-revalidate when set to 0', () => {
+    it('does not use stale-while-revalidate when set to 0', async () => {
       const cache = createCache();
-      sandbox.stub(cache, 'set').yields();
-
+      sandbox.stub(cache, 'set').resolves();
       const maxage = 1;
       const swr = 0;
       nockAPI(maxage, swr);
 
-      return requestWithCache(cache, { 'staleWhileRevalidate': true })
-        .then(() => cache.getAsync(bodySegment))
-        .then(() => {
-          sinon.assert.calledWith(cache.set, sinon.match.object, sinon.match.object, maxage * 1000);
-        });
+      await requestWithCache(cache, { 'staleWhileRevalidate': true });
+      await cache.get(bodySegment);
+
+      sinon.assert.calledWith(cache.set, sinon.match.object, sinon.match.object, maxage * 1000);
     });
 
-    it('does not use stale-while-revalidate if disabled', () => {
+    it('does not use stale-while-revalidate if disabled', async () => {
       const cache = createCache();
-      sandbox.stub(cache, 'set').yields();
+      sandbox.stub(cache, 'set').resolves();
 
       const maxage = 1;
       const swr = 7200;
       nockAPI(maxage, swr);
 
-      return requestWithCache(cache, { 'stale-while-revalidate': false })
-        .then(() => cache.getAsync(bodySegment))
-        .then(() => {
-          sinon.assert.calledWith(cache.set, sinon.match.object, sinon.match.object, maxage * 1000);
-        });
+      await requestWithCache(cache, { 'stale-while-revalidate': false });
+      await cache.get(bodySegment);
+      sinon.assert.calledWith(cache.set, sinon.match.object, sinon.match.object, maxage * 1000);
     });
 
     it('disallows multiple refreshes for the same request at a time', async () => {
@@ -429,7 +399,7 @@ describe('Max-Age', () => {
         .get('http://www.example.com/some-cacheable-path')
         .asResponse()
         .then(() =>
-          cache.getAsync({
+          cache.get({
             segment: `http-transport:${VERSION}:body`,
             id: 'http://www.example.com/some-cacheable-path'
           })
@@ -453,7 +423,7 @@ describe('Max-Age', () => {
         .get('http://www.example.com/some-cacheable-path?d=ank')
         .asResponse()
         .then(() =>
-          cache.getAsync({
+          cache.get({
             segment: `http-transport:${VERSION}:body`,
             id: 'http://www.example.com/some-cacheable-path?d=ank'
           })
@@ -478,7 +448,7 @@ describe('Max-Age', () => {
         .query('d', 'ank')
         .asResponse()
         .then(() =>
-          cache.getAsync({
+          cache.get({
             segment: `http-transport:${VERSION}:body`,
             id: 'http://www.example.com/some-cacheable-path?d=ank'
           })
@@ -498,7 +468,7 @@ describe('Max-Age', () => {
     api.get('/').reply(200, defaultResponse);
 
     return requestWithCache(cache)
-      .then(() => cache.getAsync(bodySegment))
+      .then(() => cache.get(bodySegment))
       .then((cached) => assert(!cached));
   });
 
@@ -512,11 +482,11 @@ describe('Max-Age', () => {
     });
 
     return requestWithCache(cache)
-      .then(() => cache.getAsync(bodySegment))
+      .then(() => cache.get(bodySegment))
       .then((cached) => assert(!cached));
   });
 
-  it('returns a cached response when available', () => {
+  it('returns a cached response when available', async () => {
     const headers = {
       'cache-control': 'max-age=0'
     };
@@ -534,19 +504,31 @@ describe('Max-Age', () => {
       headers
     });
 
-    return cache
-      .startAsync()
-      .then(() => cache.setAsync(bodySegment, cachedResponse, 600))
-      .then(() => requestWithCache(cache))
-      .then((res) => {
-        assert.equal(res.body, cachedResponse.body);
-        assert.deepEqual(res.headers, cachedResponse.headers);
-        assert.equal(res.statusCode, cachedResponse.statusCode);
-        assert.equal(res.url, cachedResponse.url);
-        assert.equal(res.elapsedTime, cachedResponse.elapsedTime);
+    await cache.start();
+    await cache.set(bodySegment, cachedResponse, 600);
+    const res = await requestWithCache(cache);
 
-        return cache.drop(bodySegment);
-      });
+    assert.equal(res.body, cachedResponse.body);
+    assert.deepEqual(res.headers, cachedResponse.headers);
+    assert.equal(res.statusCode, cachedResponse.statusCode);
+    assert.equal(res.url, cachedResponse.url);
+    assert.equal(res.elapsedTime, cachedResponse.elapsedTime);
+
+    await cache.drop(bodySegment);
+
+    // return cache
+    //   .start()
+    //   .then(() => cache.set(bodySegment, cachedResponse, 600))
+    //   .then(() => requestWithCache(cache))
+    //   .then((res) => {
+    //     assert.equal(res.body, cachedResponse.body);
+    //     assert.deepEqual(res.headers, cachedResponse.headers);
+    //     assert.equal(res.statusCode, cachedResponse.statusCode);
+    //     assert.equal(res.url, cachedResponse.url);
+    //     assert.equal(res.elapsedTime, cachedResponse.elapsedTime);
+
+    //     return cache.drop(bodySegment);
+    //   });
   });
 
   describe('Events', () => {

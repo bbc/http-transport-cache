@@ -1,6 +1,6 @@
 {
   "name": "@bbc/http-transport-cache",
-  "version": "1.5.2",
+  "version": "2.0.0",
   "description": "Caching middleware",
   "main": "index.js",
   "scripts": {
@@ -22,8 +22,6 @@
   "devDependencies": {
     "@bbc/http-transport": "^1.0.0",
     "@bbc/http-transport-to-error": "^1.0.0",
-    "catbox": "^7.1.3",
-    "catbox-memory": "^2.0.4",
     "chai": "^4.1.2",
     "eslint": "^4.1.1",
     "eslint-config-iplayer-es6": "^3.1.0",
@@ -35,6 +33,8 @@
   },
   "dependencies": {
     "bluebird": "^3.5.1",
+    "catbox": "^10.0.2",
+    "catbox-memory": "^3.1.1",
     "lodash": "^4.17.4",
     "wreck": "^12.2.0"
   },
