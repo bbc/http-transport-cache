@@ -13,45 +13,43 @@ npm install --save http-transport-cache
 Configure response caching based on max-age:
 
 ```js
-const url = 'http://example.com/';
-const HttpTransport = require('http-transport');
-const bluebird = require('bluebird');
+const cache = require('@bbc/http-transport-cache');
 const Catbox = require('catbox');
+const HttpTransport = require('@bbc/http-transport');
 
-const cache = new Catbox.Client(new Memory());
-bluebird.promisifyAll(cache);
+const catbox = new Catbox.Client(new Memory());
+
+const url = 'http://example.com/';
 
 const client = HttpTransport.createBuilder()
       .use(cache.maxAge(catbox))
       .createClient();
 
-      client.get(url)
-        .asBody()
-        .then((body) => {
-          console.log(body);
-        });
+      const body = await client.get(url)
+        .asBody();
+
+      console.log(body);
 ```
 
 Configure stale-if-error:
 
 ```js
-const url = 'http://example.com/';
-const HttpTransport = require('http-transport');
-const bluebird = require('bluebird');
+const cache = require('@bbc/http-transport-cache');
 const Catbox = require('catbox');
+const HttpTransport = require('@bbc/http-transport');
 
-const cache = new Catbox.Client(new Memory());
-bluebird.promisifyAll(cache);
+const catbox = new Catbox.Client(new Memory());
+
+const url = 'http://example.com/';
 
 const client = HttpTransport.createClient()
       .use(cache.staleIfError(catbox))
       .createClient();
 
-      client.get(url)
-        .asBody()
-        .then((body) => {
-          console.log(body);
-        });
+      const body = await client.get(url)
+        .asBody();
+
+      console.log(body);
 ```
 
 ## Features
