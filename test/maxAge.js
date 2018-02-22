@@ -515,20 +515,6 @@ describe('Max-Age', () => {
     assert.equal(res.elapsedTime, cachedResponse.elapsedTime);
 
     await cache.drop(bodySegment);
-
-    // return cache
-    //   .start()
-    //   .then(() => cache.set(bodySegment, cachedResponse, 600))
-    //   .then(() => requestWithCache(cache))
-    //   .then((res) => {
-    //     assert.equal(res.body, cachedResponse.body);
-    //     assert.deepEqual(res.headers, cachedResponse.headers);
-    //     assert.equal(res.statusCode, cachedResponse.statusCode);
-    //     assert.equal(res.url, cachedResponse.url);
-    //     assert.equal(res.elapsedTime, cachedResponse.elapsedTime);
-
-    //     return cache.drop(bodySegment);
-    //   });
   });
 
   describe('Events', () => {
