@@ -35,7 +35,7 @@ function createCache() {
 }
 
 describe('http-transport-cache', () => {
-  it('supports max-age and stale-if-error together', () => {
+  it('supports max-age and stale-if-error together', async () => {
     const cache = createCache();
 
     nock('http://www.example.com')
@@ -48,18 +48,13 @@ describe('http-transport-cache', () => {
       .use(httpTransportCache.staleIfError(cache))
       .createClient();
 
-    return cache
-      .startAsync()
-      .then(() => cache.setAsync(bodySegment, cachedResponse, 7200))
-      .then(() => {
-        return client
-          .get('http://www.example.com/')
-          .asResponse()
-          .then((res) => {
-            assert.strictEqual(res.statusCode, 200);
-            assert.equal(res.body, 'http-transport');
-            return res;
-          });
-      });
+    await cache.start();
+    await cache.set(bodySegment, cachedResponse, 7200);
+    const res = await client
+      .get('http://www.example.com/')
+      .asResponse();
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.equal(res.body, 'http-transport');
   });
 });

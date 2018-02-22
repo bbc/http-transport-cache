@@ -5,11 +5,11 @@ const Catbox = require('catbox');
 const Memory = require('catbox-memory');
 const bluebird = require('bluebird');
 const sinon = require('sinon');
-const sandbox = sinon.sandbox.create();
 
 const { getFromCache, storeInCache } = require('../lib/cache');
 const events = require('../').events;
 
+const sandbox = sinon.sandbox.create();
 const SEGMENT = 'body';
 const VERSION = require('../package').version;
 const bodySegment = {
@@ -27,10 +27,7 @@ const cachedResponse = {
 };
 
 function createCache() {
-  const cache = new Catbox.Client(new Memory());
-  bluebird.promisifyAll(cache);
-
-  return cache;
+  return new Catbox.Client(new Memory());
 }
 
 describe('Cache', () => {
@@ -38,161 +35,144 @@ describe('Cache', () => {
     sandbox.restore();
   });
 
-  it('returns a cached value', () => {
+  it('returns a cached value', async () => {
     const cache = createCache();
-    return cache
-      .startAsync()
-      .then(() => cache.setAsync(bodySegment, cachedResponse, 600))
-      .then(() => {
-        return getFromCache(cache, SEGMENT, ID)
-          .catch(assert.ifError)
-          .then((cached) => {
-            assert.deepEqual(cached.item, cachedResponse);
-          });
-      });
+    await cache.start();
+
+    await cache.set(bodySegment, cachedResponse, 600);
+    const cached = await getFromCache(cache, SEGMENT, ID);
+    assert.deepEqual(cached.item, cachedResponse);
   });
 
-  it('stores a value in the cache', () => {
+  it('stores a value in the cache', async () => {
     const cache = createCache();
-    return cache
-      .startAsync()
-      .then(() => storeInCache(cache, SEGMENT, ID, { a: 1 }, 600))
-      .then(() => {
-        return getFromCache(cache, SEGMENT, ID)
-          .catch(assert.ifError)
-          .then((cached) => {
-            assert.deepEqual(cached.item, { a: 1 });
-          });
-      });
+    await cache.start();
+    await storeInCache(cache, SEGMENT, ID, { a: 1 }, 600);
+    const cached = await getFromCache(cache, SEGMENT, ID);
+    assert.deepEqual(cached.item, { a: 1 });
   });
 
-  it('returns an error', () => {
+  it('returns an error', async () => {
     const cache = createCache();
-    sandbox.stub(cache, 'get').yields(new Error('error'));
+    sandbox.stub(cache, 'get').rejects(new Error('error'));
 
-    return cache.startAsync().then(() => {
-      return getFromCache(cache, SEGMENT, ID)
-        .then(() => assert.fail())
-        .catch((err) => {
-          assert.equal(err.message, 'error');
-        });
-    });
+    await cache.start();
+
+    try {
+      await getFromCache(cache, SEGMENT, ID);
+    } catch (err) {
+      return assert.equal(err.message, 'error');
+    }
+    assert.fail();
   });
 
-  it('times out a request', () => {
+  it('times out a request', async () => {
     const cache = createCache();
     let cacheLookupComplete = false;
-    sandbox.stub(cache, 'get').callsFake(() => {
-      setTimeout(() => {
+    sandbox.stub(cache, 'get').callsFake(async () => {
+      return bluebird.delay(100).then(() => {
         cacheLookupComplete = true;
-      }, 100);
+      });
     });
 
-    return cache.startAsync().then(() => {
-      const timeout = 10;
-      return getFromCache(cache, SEGMENT, ID, { timeout })
-        .then(() => assert.fail())
-        .catch((err) => {
-          assert.isFalse(cacheLookupComplete);
-          assert.equal(err.message, `Cache timed out after ${timeout}`);
-        });
-    });
+    const timeout = 10;
+    try {
+      await getFromCache(cache, SEGMENT, ID, { timeout });
+    } catch (err) {
+      assert.isFalse(cacheLookupComplete);
+      return assert.equal(err.message, `Cache timed out after ${timeout}`);
+    }
+    assert.fail();
   });
 
-  it('returns a cache miss when "ignoreCacheErrors" is true', () => {
+  it('returns a cache miss when "ignoreCacheErrors" is true', async () => {
     const cache = createCache();
-    sandbox.stub(cache, 'get').yields(new Error('cache lookup failed!'));
+    sandbox.stub(cache, 'get').rejects(new Error('cache lookup failed!'));
+    await cache.start();
 
-    return cache.startAsync().then(() => {
-      const ignoreCacheErrors = true;
-      return getFromCache(cache, SEGMENT, ID, { ignoreCacheErrors })
-        .catch(() => assert.fail())
-        .then((cached) => {
-          assert.isNull(cached);
-        });
+    const cached = await getFromCache(cache, SEGMENT, ID, { ignoreCacheErrors: true });
+    assert.isNull(cached);
+  });
+});
+
+describe('events', () => {
+  it('emits events with the cache name when present', async () => {
+    const cache = createCache();
+    let cacheTimeout = false;
+
+    sandbox.stub(cache, 'get').callsFake(async () => {
+      await bluebird.delay(100);
+      cacheTimeout = true;
     });
+
+    events.on('cache.ceych.timeout', () => {
+      cacheTimeout = true;
+    });
+
+    const opts = {
+      name: 'ceych',
+      timeout: 50
+    };
+
+    await cache.start();
+
+    try {
+      await getFromCache(cache, SEGMENT, ID, opts);
+    } catch (err) {
+      return assert.ok(cacheTimeout);
+    }
+    assert.fail();
   });
 
-  describe('events', () => {
-    it('emits events with the cache name when present', () => {
-      const cache = createCache();
-      sandbox.stub(cache, 'get').callsFake(() => {
-        setTimeout(() => { }, 100);
-      });
-
-      let cacheTimeout = false;
-      events.on('cache.ceych.timeout', () => {
-        cacheTimeout = true;
-      });
-
-      const opts = {
-        name: 'ceych',
-        timeout: 50
-      };
-
-      return cache.startAsync().then(() => {
-        return getFromCache(cache, SEGMENT, ID, opts)
-          .then(assert.ifError)
-          .catch(() => {
-            assert.ok(cacheTimeout);
-          });
-      });
+  it('emits a timeout event', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'get').callsFake(async () => {
+      await bluebird.delay(100);
     });
 
-    it('emits a timeout event', () => {
-      const cache = createCache();
-      sandbox.stub(cache, 'get').callsFake(() => {
-        setTimeout(() => { }, 100);
-      });
-
-      let cacheTimeout = false;
-      events.on('cache.timeout', () => {
-        cacheTimeout = true;
-      });
-
-      return cache.startAsync().then(() => {
-        return getFromCache(cache, SEGMENT, ID, { timeout: 50 })
-          .then(assert.ifError)
-          .catch(() => {
-            assert.ok(cacheTimeout);
-          });
-      });
+    let cacheTimeout = false;
+    events.on('cache.timeout', () => {
+      cacheTimeout = true;
     });
 
-    it('emits a cache error event', () => {
-      const cache = createCache();
-      sandbox.stub(cache, 'get').yields(new Error('error'));
+    await cache.start();
+    try {
+      await getFromCache(cache, SEGMENT, ID, { timeout: 50 });
+    } catch (err) {
+      return assert.ok(cacheTimeout);
+    }
+    assert.fail();
+  });
 
-      let cacheError = false;
-      events.on('cache.error', () => {
-        cacheError = true;
-      });
+  it('emits a cache error event', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'get').rejects(new Error('error'));
 
-      return cache.startAsync().then(() => {
-        return getFromCache(cache, SEGMENT, ID)
-          .then(() => assert.fail())
-          .catch(() => {
-            assert.ok(cacheError);
-          });
-      });
+    let cacheError = false;
+    events.on('cache.error', () => {
+      cacheError = true;
     });
 
-    it('emits a cache error event when "ignoreCacheErrors" is true', () => {
-      const cache = createCache();
-      sandbox.stub(cache, 'get').yields(new Error('error'));
+    await cache.start();
+    try {
+      await getFromCache(cache, SEGMENT, ID);
+    } catch (err) {
+      return assert.ok(cacheError);
+    }
+    assert.fail();
+  });
 
-      let cacheError = false;
-      events.on('cache.error', () => {
-        cacheError = true;
-      });
+  it('emits a cache error event when "ignoreCacheErrors" is true', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'get').rejects(new Error('error'));
 
-      return cache.startAsync().then(() => {
-        return getFromCache(cache, SEGMENT, ID, { ignoreCacheErrors: true })
-          .then(() => assert.fail())
-          .catch(() => {
-            assert.ok(cacheError);
-          });
-      });
+    let cacheError = false;
+    events.on('cache.error', () => {
+      cacheError = true;
     });
+
+    await cache.start();
+    await getFromCache(cache, SEGMENT, ID, { ignoreCacheErrors: true });
+    assert.ok(cacheError);
   });
 });
