@@ -199,6 +199,43 @@ describe('Max-Age', () => {
       };
     }
 
+    async function assertGetOnly(method) {
+      let invoked = false;
+      const cache = createCache();
+
+      sandbox.stub(cache, 'get').resolves({
+        item: { revalidate: Date.now() - 1000 }
+      });
+
+      const opts = {
+        'staleWhileRevalidate': true,
+        refresh: async () => {
+          invoked = true;
+          return;
+        }
+      };
+
+      const client = createCacheClient(cache, opts);
+      await client[method]('http://www.example.com/', {}).asResponse();
+
+      assert.isFalse(invoked);
+    }
+
+    async function assertSWRMaxAge(method) {
+      const maxage = 60;
+      const swr = maxage * 2;
+      api[method]('/')
+        .reply(200, defaultResponse.body, { 'cache-control': `max-age=${maxage},stale-while-revalidate=${swr}` });
+
+      const cache = createCache();
+      sandbox.stub(cache, 'set').resolves();
+
+      const client = createCacheClient(cache, { 'staleWhileRevalidate': true });
+      await client[method]('http://www.example.com/', {}).asResponse();
+
+      sinon.assert.calledWith(cache.set, sinon.match.object, sinon.match.object, maxage * 1000);
+    }
+
     it('increases the max-age by the stale-while-revalidate value', async () => {
       const cache = createCache();
       sandbox.stub(cache, 'set').resolves();
@@ -210,6 +247,22 @@ describe('Max-Age', () => {
       await requestWithCache(cache, { 'staleWhileRevalidate': true });
 
       sinon.assert.calledWith(cache.set, sinon.match.object, sinon.match.object, (maxage + swr) * 1000);
+    });
+
+    it('does not increase max-age for PUT requests', async () => {
+      await assertSWRMaxAge('put');
+    });
+
+    it('does not increase max-age for DELETE requests', async () => {
+      await assertSWRMaxAge('delete');
+    });
+
+    it('does not increase max-age for POST requests', async () => {
+      await assertSWRMaxAge('post');
+    });
+
+    it('does not increase max-age for HEAD requests', async () => {
+      await assertSWRMaxAge('head');
     });
 
     it('updates cache on successful refresh', async () => {
@@ -233,6 +286,22 @@ describe('Max-Age', () => {
       const cached = await cache.get(bodySegment);
 
       assert.equal(cached.item.body, 'We ALL love jonty');
+    });
+
+    it('does not revalidate for PUT requests', async () => {
+      assertGetOnly('put');
+    });
+
+    it('does not revalidate for POST requests', async () => {
+      assertGetOnly('post');
+    });
+
+    it('does not revalidate for DELETE requests', async () => {
+      assertGetOnly('delete');
+    });
+
+    it('does not revalidate for HEAD requests', async () => {
+      assertGetOnly('head');
     });
 
     it('sets correct TTL when storing refresh response', async () => {
