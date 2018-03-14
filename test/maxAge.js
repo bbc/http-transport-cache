@@ -253,6 +253,18 @@ describe('Max-Age', () => {
       await assertSWRMaxAge('put');
     });
 
+    it('does not increase max-age for DELETE requests', async () => {
+      await assertSWRMaxAge('delete');
+    });
+
+    it('does not increase max-age for POST requests', async () => {
+      await assertSWRMaxAge('post');
+    });
+
+    it('does not increase max-age for HEAD requests', async () => {
+      await assertSWRMaxAge('head');
+    });
+
     it('updates cache on successful refresh', async () => {
       const cache = createCache();
 
@@ -278,6 +290,18 @@ describe('Max-Age', () => {
 
     it('does not revalidate for PUT requests', async () => {
       assertGetOnly('put');
+    });
+
+    it('does not revalidate for POST requests', async () => {
+      assertGetOnly('post');
+    });
+
+    it('does not revalidate for DELETE requests', async () => {
+      assertGetOnly('delete');
+    });
+
+    it('does not revalidate for HEAD requests', async () => {
+      assertGetOnly('head');
     });
 
     it('sets correct TTL when storing refresh response', async () => {
