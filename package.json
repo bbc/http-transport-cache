@@ -38,6 +38,9 @@
     "lodash": "^4.17.4",
     "wreck": "^12.2.0"
   },
+  "peerDependencies": {
+    "@bbc/http-transport": "3.x"
+  },
   "eslintConfig": {
     "extends": "iplayer-es6",
     "parserOptions": {
