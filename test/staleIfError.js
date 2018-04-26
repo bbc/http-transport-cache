@@ -75,7 +75,7 @@ describe('Stale-If-Error', () => {
     assert(differenceInExpires < 1000 && differenceInExpires >= 0);
   });
 
-  it('does not create cache entries for errors', async () => {
+  it('does not create cache entries for critical errors', async () => {
     const catbox = createCache();
 
     api.get('/').reply(500, defaultResponse.body, defaultHeaders);
@@ -88,6 +88,21 @@ describe('Stale-If-Error', () => {
 
     const cached = await catbox.get(bodySegment);
     assert.isNull(cached);
+  });
+
+  it('does create cache entries for client errors', async () => {
+    const catbox = createCache();
+
+    api.get('/').reply(404, defaultResponse.body, defaultHeaders);
+
+    await httpTransport
+      .createClient()
+      .use(cache.staleIfError(catbox))
+      .get('http://www.example.com/')
+      .asResponse();
+
+    const cached = await catbox.get(bodySegment);
+    assert.deepEqual(cached.item.body, defaultResponse.body);
   });
 
   it('does not create cache entries for items fetched from another cache', async () => {

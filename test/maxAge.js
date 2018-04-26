@@ -72,7 +72,7 @@ describe('Max-Age', () => {
     assert(differenceInExpires < 1000);
   });
 
-  it('does not create cache entries for errors', async () => {
+  it('does not create cache entries for critical errors', async () => {
     const catbox = createCache();
 
     api.get('/').reply(500, defaultResponse.body, defaultHeaders);
@@ -86,6 +86,22 @@ describe('Max-Age', () => {
     const cached = await catbox.get(bodySegment);
 
     assert.isNull(cached);
+  });
+
+  it('does create cache entries for client errors', async () => {
+    const catbox = createCache();
+
+    api.get('/').reply(404, defaultResponse.body, defaultHeaders);
+
+    await httpTransport
+      .createClient()
+      .use(cache.maxAge(catbox))
+      .get('http://www.example.com/')
+      .asResponse();
+
+    const cached = await catbox.get(bodySegment);
+
+    assert.deepEqual(cached.item.body, defaultResponse.body);
   });
 
   it('creates cache entries for item fetcher from another cache with the correct ttl', async () => {
