@@ -304,6 +304,38 @@ describe('Max-Age', () => {
       assert.equal(cached.item.body, 'We ALL love jonty');
     });
 
+    it('does not update cache for failed requests', async () => {
+      const cache = createCache();
+      const refreshClient = httpTransport.createClient();
+
+      const maxage = 1;
+      const swr = maxage * 2;
+      const responseHeaders = { 'cache-control': `max-age=${maxage},stale-while-revalidate=${swr}` };
+
+      api
+        .get('/')
+        .reply(200, 'First Response', responseHeaders);
+
+      api
+        .get('/')
+        .reply(500, 'Second Response', responseHeaders);
+
+      const opts = {
+        'staleWhileRevalidate': true,
+        refresh: () => {
+          return refreshClient.get('http://www.example.com/').asResponse();
+        }
+      };
+
+      await requestWithCache(cache, opts);
+      await bluebird.delay((maxage * 1000));
+      await requestWithCache(cache, opts);
+      await bluebird.delay(100);
+
+      const cached = await cache.get(bodySegment);
+      assert.equal(cached.item.body, 'First Response');
+    });
+
     it('does not revalidate for PUT requests', async () => {
       assertGetOnly('put');
     });
