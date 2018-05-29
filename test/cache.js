@@ -70,9 +70,8 @@ describe('Cache', () => {
     const cache = createCache();
     let cacheLookupComplete = false;
     sandbox.stub(cache, 'get').callsFake(async () => {
-      return bluebird.delay(100).then(() => {
-        cacheLookupComplete = true;
-      });
+      await bluebird.delay(100);
+      cacheLookupComplete = true;
     });
 
     const timeout = 10;

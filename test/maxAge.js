@@ -174,10 +174,9 @@ describe('Max-Age', () => {
     const catbox = createCache();
     let cacheLookupComplete = false;
 
-    sandbox.stub(catbox, 'get').callsFake(() => {
-      return bluebird.delay(100).then(() => {
-        cacheLookupComplete = true;
-      });
+    sandbox.stub(catbox, 'get').callsFake(async () => {
+      await bluebird.delay(100);
+      cacheLookupComplete = true;
     });
     api.get('/').reply(200, defaultResponse.body, defaultHeaders);
 
@@ -506,90 +505,84 @@ describe('Max-Age', () => {
   });
 
   describe('cache keys', () => {
-    it('keys cache entries by method and url', () => {
+    it('keys cache entries by method and url', async () => {
       const cache = createCache();
       api.get('/some-cacheable-path').reply(200, defaultResponse.body, defaultHeaders);
 
       const expiry = Date.now() + 60000;
 
-      return createCacheClient(cache)
+      await createCacheClient(cache)
         .get('http://www.example.com/some-cacheable-path')
-        .asResponse()
-        .then(() =>
-          cache.get({
-            segment: `http-transport:${VERSION}:body`,
-            id: 'GET:http://www.example.com/some-cacheable-path'
-          })
-        )
-        .then((cached) => {
-          const actualExpiry = cached.ttl + cached.stored;
-          const differenceInExpires = actualExpiry - expiry;
+        .asResponse();
 
-          assert.deepEqual(cached.item.body, defaultResponse.body);
-          assert(differenceInExpires < 1000);
-        });
+      const cached = await cache.get({
+        segment: `http-transport:${VERSION}:body`,
+        id: 'GET:http://www.example.com/some-cacheable-path'
+      });
+
+      const actualExpiry = cached.ttl + cached.stored;
+      const differenceInExpires = actualExpiry - expiry;
+
+      assert.deepEqual(cached.item.body, defaultResponse.body);
+      assert(differenceInExpires < 1000);
     });
 
-    it('keys cache entries by url including query strings in request url', () => {
+    it('keys cache entries by url including query strings in request url', async () => {
       const cache = createCache();
       api.get('/some-cacheable-path?d=ank').reply(200, defaultResponse.body, defaultHeaders);
 
       const expiry = Date.now() + 60000;
 
-      return createCacheClient(cache)
+      await createCacheClient(cache)
         .get('http://www.example.com/some-cacheable-path?d=ank')
-        .asResponse()
-        .then(() =>
-          cache.get({
-            segment: `http-transport:${VERSION}:body`,
-            id: 'GET:http://www.example.com/some-cacheable-path?d=ank'
-          })
-        )
-        .then((cached) => {
-          const actualExpiry = cached.ttl + cached.stored;
-          const differenceInExpires = actualExpiry - expiry;
+        .asResponse();
 
-          assert.deepEqual(cached.item.body, defaultResponse.body);
-          assert(differenceInExpires < 1000);
-        });
+      const cached = await cache.get({
+        segment: `http-transport:${VERSION}:body`,
+        id: 'GET:http://www.example.com/some-cacheable-path?d=ank'
+      });
+
+      const actualExpiry = cached.ttl + cached.stored;
+      const differenceInExpires = actualExpiry - expiry;
+
+      assert.deepEqual(cached.item.body, defaultResponse.body);
+      assert(differenceInExpires < 1000);
     });
 
-    it('keys cache entries by url including query strings in query object', () => {
+    it('keys cache entries by url including query strings in query object', async () => {
       const cache = createCache();
       api.get('/some-cacheable-path?d=ank').reply(200, defaultResponse.body, defaultHeaders);
 
       const expiry = Date.now() + 60000;
 
-      return createCacheClient(cache)
+      await createCacheClient(cache)
         .get('http://www.example.com/some-cacheable-path')
         .query('d', 'ank')
-        .asResponse()
-        .then(() =>
-          cache.get({
-            segment: `http-transport:${VERSION}:body`,
-            id: 'GET:http://www.example.com/some-cacheable-path?d=ank'
-          })
-        )
-        .then((cached) => {
-          const actualExpiry = cached.ttl + cached.stored;
-          const differenceInExpires = actualExpiry - expiry;
+        .asResponse();
 
-          assert.deepEqual(cached.item.body, defaultResponse.body);
-          assert(differenceInExpires < 1000);
-        });
+      const cached = await cache.get({
+        segment: `http-transport:${VERSION}:body`,
+        id: 'GET:http://www.example.com/some-cacheable-path?d=ank'
+      });
+
+      const actualExpiry = cached.ttl + cached.stored;
+      const differenceInExpires = actualExpiry - expiry;
+
+      assert.deepEqual(cached.item.body, defaultResponse.body);
+      assert(differenceInExpires < 1000);
     });
   });
 
-  it('does not store if no cache-control', () => {
+  it('does not store if no cache-control', async () => {
     const cache = createCache();
     api.get('/').reply(200, defaultResponse);
 
-    return requestWithCache(cache)
-      .then(() => cache.get(bodySegment))
-      .then((cached) => assert(!cached));
+    await requestWithCache(cache);
+    const cached = await cache.get(bodySegment);
+    assert(!cached);
   });
 
-  it('does not store if max-age=0', () => {
+  it('does not store if max-age=0', async () => {
     const cache = createCache();
 
     api.get('/').reply(200, defaultResponse, {
@@ -598,9 +591,9 @@ describe('Max-Age', () => {
       }
     });
 
-    return requestWithCache(cache)
-      .then(() => cache.get(bodySegment))
-      .then((cached) => assert(!cached));
+    await requestWithCache(cache);
+    const cached = await cache.get(bodySegment);
+    assert(!cached);
   });
 
   it('returns a cached response when available', async () => {
@@ -635,7 +628,7 @@ describe('Max-Age', () => {
   });
 
   describe('Events', () => {
-    it('emits events with name when name option is present', () => {
+    it('emits events with name when name option is present', async () => {
       const cache = createCache();
       api.get('/').reply(200, defaultResponse.body, defaultHeaders);
 
@@ -648,13 +641,11 @@ describe('Max-Age', () => {
         name: 'ceych'
       };
 
-      return requestWithCache(cache, opts)
-        .then(() => {
-          assert.ok(cacheMiss);
-        });
+      await requestWithCache(cache, opts);
+      assert.ok(cacheMiss);
     });
 
-    it('emits a cache miss event', () => {
+    it('emits a cache miss event', async () => {
       const cache = createCache();
       api.get('/').reply(200, defaultResponse.body, defaultHeaders);
 
@@ -663,13 +654,11 @@ describe('Max-Age', () => {
         cacheMiss = true;
       });
 
-      return requestWithCache(cache)
-        .then(() => {
-          assert.ok(cacheMiss);
-        });
+      await requestWithCache(cache);
+      assert.ok(cacheMiss);
     });
 
-    it('emits a cache hit event', () => {
+    it('emits a cache hit event', async () => {
       const cache = createCache();
       api.get('/').reply(200, defaultResponse.body, defaultHeaders);
 
@@ -678,13 +667,9 @@ describe('Max-Age', () => {
         cacheHit = true;
       });
 
-      return requestWithCache(cache)
-        .then(() => {
-          return requestWithCache(cache)
-            .then(() => {
-              assert.ok(cacheHit);
-            });
-        });
+      await requestWithCache(cache);
+      await requestWithCache(cache);
+      assert.ok(cacheHit);
     });
   });
 });
