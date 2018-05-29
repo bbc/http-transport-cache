@@ -12,7 +12,7 @@ const httpTransportCache = require('../');
 
 const bodySegment = {
   segment: `http-transport:${VERSION}:stale`,
-  id: 'http://www.example.com/'
+  id: 'GET:http://www.example.com/'
 };
 
 const defaultHeaders = {

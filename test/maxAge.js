@@ -31,7 +31,7 @@ const defaultResponse = {
 
 const bodySegment = {
   segment: `http-transport:${VERSION}:body`,
-  id: 'http://www.example.com/'
+  id: 'GET:http://www.example.com/'
 };
 
 nock.disableNetConnect();
@@ -506,7 +506,7 @@ describe('Max-Age', () => {
   });
 
   describe('cache keys', () => {
-    it('keys cache entries by url', () => {
+    it('keys cache entries by method and url', () => {
       const cache = createCache();
       api.get('/some-cacheable-path').reply(200, defaultResponse.body, defaultHeaders);
 
@@ -518,7 +518,7 @@ describe('Max-Age', () => {
         .then(() =>
           cache.get({
             segment: `http-transport:${VERSION}:body`,
-            id: 'http://www.example.com/some-cacheable-path'
+            id: 'GET:http://www.example.com/some-cacheable-path'
           })
         )
         .then((cached) => {
@@ -542,7 +542,7 @@ describe('Max-Age', () => {
         .then(() =>
           cache.get({
             segment: `http-transport:${VERSION}:body`,
-            id: 'http://www.example.com/some-cacheable-path?d=ank'
+            id: 'GET:http://www.example.com/some-cacheable-path?d=ank'
           })
         )
         .then((cached) => {
@@ -567,7 +567,7 @@ describe('Max-Age', () => {
         .then(() =>
           cache.get({
             segment: `http-transport:${VERSION}:body`,
-            id: 'http://www.example.com/some-cacheable-path?d=ank'
+            id: 'GET:http://www.example.com/some-cacheable-path?d=ank'
           })
         )
         .then((cached) => {
