@@ -573,9 +573,18 @@ describe('Max-Age', () => {
     });
   });
 
+  it('does not store if cache control headers are non numbers', async () => {
+    const cache = createCache();
+    api.get('/').reply(200, defaultResponse.body, { 'cache-control': 'max-age=NAN'});
+
+    await requestWithCache(cache);
+    const cached = await cache.get(bodySegment);
+    assert(!cached);
+  });
+
   it('does not store if no cache-control', async () => {
     const cache = createCache();
-    api.get('/').reply(200, defaultResponse);
+    api.get('/').reply(200, defaultResponse.body, {});
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);

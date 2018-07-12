@@ -168,6 +168,15 @@ describe('Stale-If-Error', () => {
     assert(!cached);
   });
 
+  it('does not store if cache control headers are non numbers', async () => {
+    const cache = createCache();
+    api.get('/').reply(200, defaultResponse.body, { 'cache-control': 'stale-if-error =NAN' });
+
+    await requestWithCache(cache);
+    const cached = await cache.get(bodySegment);
+    assert(!cached);
+  });
+
   it('returns cached response if available when error response is returned', async () => {
     const cachedResponse = {
       body: 'http-transport',
