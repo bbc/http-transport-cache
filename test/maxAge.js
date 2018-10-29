@@ -11,7 +11,7 @@ const sinon = require('sinon');
 
 const sandbox = sinon.sandbox.create();
 const cache = require('../');
-const events = require('../').events;
+const { events } = cache;
 
 const api = nock('http://www.example.com');
 
@@ -679,6 +679,37 @@ describe('Max-Age', () => {
       await requestWithCache(cache);
       await requestWithCache(cache);
       assert.ok(cacheHit);
+    });
+
+    it('emits a cache hit event with the correct context', async () => {
+      const cache = createCache();
+      const expectedContext = { res: defaultResponse };
+      api.get('/').reply(200, defaultResponse, defaultHeaders);
+
+      let context;
+      events.on('cache.hit', (ctx) => {
+        context = ctx;
+      });
+
+      await requestWithCache(cache, expectedContext);
+      await requestWithCache(cache, expectedContext);
+
+      assert.instanceOf(context, httpTransport.context);
+    });
+
+    it('emits a cache miss event with the correct context', async () => {
+      const cache = createCache();
+      const expectedContext = { res: defaultResponse };
+      api.get('/').reply(200, defaultResponse, defaultHeaders);
+
+      let context;
+      events.on('cache.miss', (ctx) => {
+        context = ctx;
+      });
+
+      await requestWithCache(cache, expectedContext);
+
+      assert.instanceOf(context, httpTransport.context);
     });
   });
 });
