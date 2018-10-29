@@ -310,5 +310,33 @@ describe('Stale-If-Error', () => {
 
       assert.ok(cacheStale);
     });
+
+    it('emits a stale cache event with with the correct context', async () => {
+      const opts = {
+        name: 'ceych'
+      };
+
+      let context;
+      events.on('cache.ceych.stale', (ctx) => {
+        context = ctx;
+      });
+
+      const cachedResponse = {
+        body: 'http-transport',
+        headers: defaultHeaders,
+        elapsedTime: 40,
+        url: 'http://www.example.com/',
+        statusCode: 200
+      };
+      const cache = createCache();
+
+      api.get('/').reply(500, defaultResponse.body, {});
+
+      await cache.start();
+      await cache.set(bodySegment, cachedResponse, 7200);
+      await requestWithCache(cache, opts);
+
+      assert.instanceOf(context, httpTransport.context);
+    });
   });
 });
