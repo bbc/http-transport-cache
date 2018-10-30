@@ -4,6 +4,7 @@ const assert = require('chai').assert;
 const Catbox = require('catbox');
 const Memory = require('catbox-memory');
 const nock = require('nock');
+const bluebird = require('bluebird');
 
 const sinon = require('sinon');
 
@@ -260,19 +261,20 @@ describe('Stale-If-Error', () => {
   });
 
   describe('Events', () => {
+    const cachedResponse = {
+      body: 'http-transport',
+      headers: defaultHeaders,
+      elapsedTime: 40,
+      url: 'http://www.example.com/',
+      statusCode: 200
+    };
+
     it('emits a stale cache event when returning stale', async () => {
       let cacheStale = false;
       events.on('cache.stale', () => {
         cacheStale = true;
       });
 
-      const cachedResponse = {
-        body: 'http-transport',
-        headers: defaultHeaders,
-        elapsedTime: 40,
-        url: 'http://www.example.com/',
-        statusCode: 200
-      };
       const cache = createCache();
 
       api.get('/').reply(500, defaultResponse.body, {});
@@ -293,13 +295,6 @@ describe('Stale-If-Error', () => {
         cacheStale = true;
       });
 
-      const cachedResponse = {
-        body: 'http-transport',
-        headers: defaultHeaders,
-        elapsedTime: 40,
-        url: 'http://www.example.com/',
-        statusCode: 200
-      };
       const cache = createCache();
 
       api.get('/').reply(500, defaultResponse.body, {});
@@ -321,13 +316,6 @@ describe('Stale-If-Error', () => {
         context = ctx;
       });
 
-      const cachedResponse = {
-        body: 'http-transport',
-        headers: defaultHeaders,
-        elapsedTime: 40,
-        url: 'http://www.example.com/',
-        statusCode: 200
-      };
       const cache = createCache();
 
       api.get('/').reply(500, defaultResponse.body, {});
@@ -337,6 +325,54 @@ describe('Stale-If-Error', () => {
       await requestWithCache(cache, opts);
 
       assert.instanceOf(context, httpTransport.context);
+    });
+
+    it('emits a timeout cache event with with the correct context', async() => {
+      const cache = createCache();
+      api.get('/').reply(500, defaultResponse, defaultHeaders);
+
+      sandbox.stub(cache, 'get').callsFake(async () => {
+        await bluebird.delay(100);
+      });
+
+      let context;
+      events.on('cache.timeout', (ctx) => {
+        context = ctx;
+      });
+
+      await cache.start();
+      await cache.set(bodySegment, cachedResponse, 7200);
+
+      try {
+        await requestWithCache(cache, { timeout: 10 });
+      } catch (err) {
+        assert.instanceOf(context, httpTransport.context);
+      }
+
+      assert.fail('Expected to throw');
+    });
+
+    it('emits a cache error event with with the correct context', async() => {
+      const cache = createCache();
+      api.get('/').reply(500, defaultResponse, defaultHeaders);
+
+      sandbox.stub(cache, 'get').rejects(new Error('error'));
+
+      let context;
+      events.on('cache.error', (ctx) => {
+        context = ctx;
+      });
+
+      await cache.start();
+      await cache.set(bodySegment, cachedResponse, 7200);
+
+      try {
+        await requestWithCache(cache);
+      } catch (err) {
+        assert.instanceOf(context, httpTransport.context);
+      }
+
+      assert.fail('Expected to throw');
     });
   });
 });

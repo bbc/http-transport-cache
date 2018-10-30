@@ -730,7 +730,6 @@ describe('Max-Age', () => {
       }
 
       assert.fail('Expected to throw');
-
     });
 
     it('returns a context from a cache error event emission', async() => {
@@ -745,10 +744,12 @@ describe('Max-Age', () => {
       });
 
       try {
-        await requestWithCache(cache, { timeout: 10 });
+        await requestWithCache(cache);
       } catch (err) {
         assert.instanceOf(context, httpTransport.context);
       }
+
+      assert.fail('Expected to throw');
     });
   });
 });
