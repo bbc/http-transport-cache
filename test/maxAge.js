@@ -681,9 +681,8 @@ describe('Max-Age', () => {
       assert.ok(cacheHit);
     });
 
-    it('emits a cache hit event with the correct context', async () => {
+    it('returns a context from a cache hit event emission', async () => {
       const cache = createCache();
-      const expectedContext = { res: defaultResponse };
       api.get('/').reply(200, defaultResponse, defaultHeaders);
 
       let context;
@@ -691,15 +690,14 @@ describe('Max-Age', () => {
         context = ctx;
       });
 
-      await requestWithCache(cache, expectedContext);
-      await requestWithCache(cache, expectedContext);
+      await requestWithCache(cache);
+      await requestWithCache(cache);
 
       assert.instanceOf(context, httpTransport.context);
     });
 
-    it('emits a cache miss event with the correct context', async () => {
+    it('returns a context from a cache miss event emission', async () => {
       const cache = createCache();
-      const expectedContext = { res: defaultResponse };
       api.get('/').reply(200, defaultResponse, defaultHeaders);
 
       let context;
@@ -707,12 +705,12 @@ describe('Max-Age', () => {
         context = ctx;
       });
 
-      await requestWithCache(cache, expectedContext);
+      await requestWithCache(cache);
 
       assert.instanceOf(context, httpTransport.context);
     });
 
-    it('emits a cache timeout event with the correct context', async() => {
+    it('returns a context from a cache timeout event emission', async() => {
       const cache = createCache();
       api.get('/').reply(200, defaultResponse, defaultHeaders);
 
@@ -732,7 +730,7 @@ describe('Max-Age', () => {
       }
     });
 
-    it('emits a cache error event with the correct context', async() => {
+    it('returns a context from a cache error event emission', async() => {
       const cache = createCache();
       api.get('/').reply(200, defaultResponse, defaultHeaders);
 
