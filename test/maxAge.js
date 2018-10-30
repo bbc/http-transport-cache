@@ -711,5 +711,43 @@ describe('Max-Age', () => {
 
       assert.instanceOf(context, httpTransport.context);
     });
+
+    it('emits a cache timeout event with the correct context', async() => {
+      const cache = createCache();
+      api.get('/').reply(200, defaultResponse, defaultHeaders);
+
+      sandbox.stub(cache, 'get').callsFake(async () => {
+        await bluebird.delay(100);
+      });
+
+      let context;
+      events.on('cache.timeout', (ctx) => {
+        context = ctx;
+      });
+
+      try {
+        await requestWithCache(cache, { timeout: 10 });
+      } catch (err) {
+        assert.instanceOf(context, httpTransport.context);
+      }
+    });
+
+    it('emits a cache error event with the correct context', async() => {
+      const cache = createCache();
+      api.get('/').reply(200, defaultResponse, defaultHeaders);
+
+      sandbox.stub(cache, 'get').rejects(new Error('error'));
+
+      let context;
+      events.on('cache.error', (ctx) => {
+        context = ctx;
+      });
+
+      try {
+        await requestWithCache(cache, { timeout: 10 });
+      } catch (err) {
+        assert.instanceOf(context, httpTransport.context);
+      }
+    });
   });
 });
