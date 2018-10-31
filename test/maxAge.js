@@ -727,6 +727,7 @@ describe('Max-Age', () => {
         await requestWithCache(cache, { timeout: 10 });
       } catch (err) {
         assert.instanceOf(context, httpTransport.context);
+        return;
       }
 
       assert.fail('Expected to throw');
@@ -747,6 +748,7 @@ describe('Max-Age', () => {
         await requestWithCache(cache);
       } catch (err) {
         assert.instanceOf(context, httpTransport.context);
+        return;
       }
 
       assert.fail('Expected to throw');
