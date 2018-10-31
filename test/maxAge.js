@@ -11,7 +11,7 @@ const sinon = require('sinon');
 
 const sandbox = sinon.sandbox.create();
 const cache = require('../');
-const events = require('../').events;
+const { events } = cache;
 
 const api = nock('http://www.example.com');
 
@@ -679,6 +679,77 @@ describe('Max-Age', () => {
       await requestWithCache(cache);
       await requestWithCache(cache);
       assert.ok(cacheHit);
+    });
+
+    it('returns a context from a cache hit event emission', async () => {
+      const cache = createCache();
+      api.get('/').reply(200, defaultResponse, defaultHeaders);
+
+      let context;
+      events.on('cache.hit', (ctx) => {
+        context = ctx;
+      });
+
+      await requestWithCache(cache);
+      await requestWithCache(cache);
+
+      assert.instanceOf(context, httpTransport.context);
+    });
+
+    it('returns a context from a cache miss event emission', async () => {
+      const cache = createCache();
+      api.get('/').reply(200, defaultResponse, defaultHeaders);
+
+      let context;
+      events.on('cache.miss', (ctx) => {
+        context = ctx;
+      });
+
+      await requestWithCache(cache);
+
+      assert.instanceOf(context, httpTransport.context);
+    });
+
+    it('returns a context from a cache timeout event emission', async () => {
+      const cache = createCache();
+      api.get('/').reply(200, defaultResponse, defaultHeaders);
+
+      sandbox.stub(cache, 'get').callsFake(async () => {
+        await bluebird.delay(100);
+      });
+
+      let context;
+      events.on('cache.timeout', (ctx) => {
+        context = ctx;
+      });
+
+      try {
+        await requestWithCache(cache, { timeout: 10 });
+      } catch (err) {
+        return assert.instanceOf(context, httpTransport.context);
+      }
+
+      assert.fail('Expected to throw');
+    });
+
+    it('returns a context from a cache error event emission', async () => {
+      const cache = createCache();
+      api.get('/').reply(200, defaultResponse, defaultHeaders);
+
+      sandbox.stub(cache, 'get').rejects(new Error('error'));
+
+      let context;
+      events.on('cache.error', (ctx) => {
+        context = ctx;
+      });
+
+      try {
+        await requestWithCache(cache);
+      } catch (err) {
+        return assert.instanceOf(context, httpTransport.context);
+      }
+
+      assert.fail('Expected to throw');
     });
   });
 });

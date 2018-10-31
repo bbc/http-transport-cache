@@ -7,7 +7,7 @@ const bluebird = require('bluebird');
 const sinon = require('sinon');
 
 const { getFromCache, storeInCache } = require('../lib/cache');
-const events = require('../').events;
+const { events } = require('../');
 
 const sandbox = sinon.sandbox.create();
 const SEGMENT = 'body';
@@ -95,6 +95,45 @@ describe('Cache', () => {
 });
 
 describe('events', () => {
+  const expectedContext = { context: 'context' };
+  it('emits a timeout event with correct context', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'get').callsFake(async () => {
+      await bluebird.delay(100);
+    });
+
+    let eventContext;
+    events.on('cache.timeout', (ctx) => {
+      eventContext = ctx;
+    });
+
+    await cache.start();
+    try {
+      await getFromCache(cache, SEGMENT, ID, { timeout: 50 }, expectedContext);
+    } catch (err) {
+      return assert.deepStrictEqual(eventContext, expectedContext);
+    }
+    assert.fail();
+  });
+
+  it('emits a cache error event with correct context', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'get').rejects(new Error('error'));
+
+    let eventContext;
+    events.on('cache.error', (ctx) => {
+      eventContext = ctx;
+    });
+
+    await cache.start();
+    try {
+      await getFromCache(cache, SEGMENT, ID, { timeout: 50 }, expectedContext);
+    } catch (err) {
+      return assert.deepStrictEqual(eventContext, expectedContext);
+    }
+    assert.fail();
+  });
+
   it('emits events with the cache name when present', async () => {
     const cache = createCache();
     let cacheTimeout = false;

@@ -4,6 +4,7 @@ const assert = require('chai').assert;
 const Catbox = require('catbox');
 const Memory = require('catbox-memory');
 const nock = require('nock');
+const bluebird = require('bluebird');
 
 const sinon = require('sinon');
 
@@ -201,113 +202,177 @@ describe('Stale-If-Error', () => {
 
     return cache.drop(bodySegment);
   });
-});
+  it('returns the original error if nothing in cache', async () => {
+    const cache = createCache();
+    api.get('/').reply(500, defaultResponse, {});
 
-it('returns the original error if nothing in cache', async () => {
-  const cache = createCache();
-  api.get('/').reply(500, defaultResponse, {});
+    try {
+      await requestWithCache(cache);
 
-  try {
-    await requestWithCache(cache);
-
-  } catch (err) {
-    return assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
-  }
-  assert.fail('Expected to throw');
-});
-
-it('returns an error if the cache lookup fails', async () => {
-  const cache = createCache();
-  sandbox.stub(cache, 'get').rejects(new Error('cache lookup error'));
-
-  try {
-    await requestWithCache(cache);
-
-  } catch (err) {
-    return assert.equal(err.message, 'cache lookup error');
-  }
-  assert.fail('Expected to throw');
-});
-
-it('returns the original error if "ignoreCacheErrors" is true', async () => {
-  const cache = createCache();
-  api.get('/').reply(500, defaultResponse, {});
-  sandbox.stub(cache, 'get').rejects(new Error('cache lookup error'));
-
-  try {
-    await requestWithCache(cache, { ignoreCacheErrors: true });
-  } catch (err) {
-    return assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
-  }
-  assert.fail('Expected to throw');
-});
-
-it('continues to the next middleware when there\'s an error and no error handler', async () => {
-  const catbox = createCache();
-
-  api.get('/').reply(500, defaultResponse.body, defaultHeaders);
-
-  let called = false;
-  await httpTransport
-    .createClient()
-    .use(cache.staleIfError(catbox))
-    .use((ctx, next) => {
-      called = true;
-      return next();
-    })
-    .get('http://www.example.com/')
-    .asResponse();
-
-  assert.ok(called);
-});
-
-it('emits a stale cache event when returning stale', async () => {
-  let cacheStale = false;
-  events.on('cache.stale', () => {
-    cacheStale = true;
+    } catch (err) {
+      return assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
+    }
+    assert.fail('Expected to throw');
   });
 
-  const cachedResponse = {
-    body: 'http-transport',
-    headers: defaultHeaders,
-    elapsedTime: 40,
-    url: 'http://www.example.com/',
-    statusCode: 200
-  };
-  const cache = createCache();
+  it('returns an error if the cache lookup fails', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'get').rejects(new Error('cache lookup error'));
 
-  api.get('/').reply(500, defaultResponse.body, {});
+    try {
+      await requestWithCache(cache);
 
-  await cache.start();
-  await cache.set(bodySegment, cachedResponse, 7200);
-  await requestWithCache(cache);
-  assert.ok(cacheStale);
-});
-
-it('emits a stale cache event with cache name when present', async () => {
-  const opts = {
-    name: 'ceych'
-  };
-
-  let cacheStale = false;
-  events.on('cache.ceych.stale', () => {
-    cacheStale = true;
+    } catch (err) {
+      return assert.equal(err.message, 'cache lookup error');
+    }
+    assert.fail('Expected to throw');
   });
 
-  const cachedResponse = {
-    body: 'http-transport',
-    headers: defaultHeaders,
-    elapsedTime: 40,
-    url: 'http://www.example.com/',
-    statusCode: 200
-  };
-  const cache = createCache();
+  it('returns the original error if "ignoreCacheErrors" is true', async () => {
+    const cache = createCache();
+    api.get('/').reply(500, defaultResponse, {});
+    sandbox.stub(cache, 'get').rejects(new Error('cache lookup error'));
 
-  api.get('/').reply(500, defaultResponse.body, {});
+    try {
+      await requestWithCache(cache, { ignoreCacheErrors: true });
+    } catch (err) {
+      return assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
+    }
+    assert.fail('Expected to throw');
+  });
 
-  await cache.start();
-  await cache.set(bodySegment, cachedResponse, 7200);
-  await requestWithCache(cache, opts);
+  it('continues to the next middleware when there\'s an error and no error handler', async () => {
+    const catbox = createCache();
 
-  assert.ok(cacheStale);
+    api.get('/').reply(500, defaultResponse.body, defaultHeaders);
+
+    let called = false;
+    await httpTransport
+      .createClient()
+      .use(cache.staleIfError(catbox))
+      .use((ctx, next) => {
+        called = true;
+        return next();
+      })
+      .get('http://www.example.com/')
+      .asResponse();
+
+    assert.ok(called);
+  });
+
+  describe('Events', () => {
+    const cachedResponse = {
+      body: 'http-transport',
+      headers: defaultHeaders,
+      elapsedTime: 40,
+      url: 'http://www.example.com/',
+      statusCode: 200
+    };
+
+    it('emits a stale cache event when returning stale', async () => {
+      let cacheStale = false;
+      events.on('cache.stale', () => {
+        cacheStale = true;
+      });
+
+      const cache = createCache();
+
+      api.get('/').reply(500, defaultResponse.body, {});
+
+      await cache.start();
+      await cache.set(bodySegment, cachedResponse, 7200);
+      await requestWithCache(cache);
+      assert.ok(cacheStale);
+    });
+
+    it('emits a stale cache event with cache name when present', async () => {
+      const opts = {
+        name: 'ceych'
+      };
+
+      let cacheStale = false;
+      events.on('cache.ceych.stale', () => {
+        cacheStale = true;
+      });
+
+      const cache = createCache();
+
+      api.get('/').reply(500, defaultResponse.body, {});
+
+      await cache.start();
+      await cache.set(bodySegment, cachedResponse, 7200);
+      await requestWithCache(cache, opts);
+
+      assert.ok(cacheStale);
+    });
+
+    it('emits a stale cache event with the correct context', async () => {
+      const opts = {
+        name: 'ceych'
+      };
+
+      let context;
+      events.on('cache.ceych.stale', (ctx) => {
+        context = ctx;
+      });
+
+      const cache = createCache();
+
+      api.get('/').reply(500, defaultResponse.body, {});
+
+      await cache.start();
+      await cache.set(bodySegment, cachedResponse, 7200);
+      await requestWithCache(cache, opts);
+
+      assert.instanceOf(context, httpTransport.context);
+    });
+
+    it('emits a timeout cache event with the correct context', async () => {
+      const cache = createCache();
+      api.get('/').reply(500, defaultResponse, defaultHeaders);
+
+      sandbox.stub(cache, 'get').callsFake(async () => {
+        await bluebird.delay(100);
+      });
+
+      let context;
+      events.on('cache.timeout', (ctx) => {
+        context = ctx;
+      });
+
+      await cache.start();
+      await cache.set(bodySegment, cachedResponse, 7200);
+
+      try {
+        await requestWithCache(cache, { timeout: 10 });
+      } catch (err) {
+        return assert.instanceOf(context, httpTransport.context);
+      }
+
+      assert.fail('Expected to throw');
+    });
+
+    it('emits a cache error event with the correct context', async () => {
+      const cache = createCache();
+      api.get('/').reply(500, defaultResponse, defaultHeaders);
+
+      sandbox.stub(cache, 'get').rejects(new Error('error'));
+
+      let context;
+      events.on('cache.error', (ctx) => {
+        context = ctx;
+      });
+
+      await cache.start();
+      await cache.set(bodySegment, cachedResponse, 7200);
+
+      try {
+        await requestWithCache(cache);
+      } catch (err) {
+        return assert.instanceOf(context, httpTransport.context);
+      }
+
+      assert.fail('Expected to throw');
+    });
+  });
 });
