@@ -111,8 +111,7 @@ describe('events', () => {
     try {
       await getFromCache(cache, SEGMENT, ID, { timeout: 50 }, expectedContext);
     } catch (err) {
-      assert.deepStrictEqual(eventContext, expectedContext);
-      return assert.ok(true);
+      return assert.deepStrictEqual(eventContext, expectedContext);
     }
     assert.fail();
   });
@@ -130,8 +129,7 @@ describe('events', () => {
     try {
       await getFromCache(cache, SEGMENT, ID, { timeout: 50 }, expectedContext);
     } catch (err) {
-      assert.deepStrictEqual(eventContext, expectedContext);
-      return assert.ok(true);
+      return assert.deepStrictEqual(eventContext, expectedContext);
     }
     assert.fail();
   });

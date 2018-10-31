@@ -346,8 +346,7 @@ describe('Stale-If-Error', () => {
       try {
         await requestWithCache(cache, { timeout: 10 });
       } catch (err) {
-        assert.instanceOf(context, httpTransport.context);
-        return;
+        return assert.instanceOf(context, httpTransport.context);
       }
 
       assert.fail('Expected to throw');
@@ -370,8 +369,7 @@ describe('Stale-If-Error', () => {
       try {
         await requestWithCache(cache);
       } catch (err) {
-        assert.instanceOf(context, httpTransport.context);
-        return;
+        return assert.instanceOf(context, httpTransport.context);
       }
 
       assert.fail('Expected to throw');
