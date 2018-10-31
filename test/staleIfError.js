@@ -327,7 +327,7 @@ describe('Stale-If-Error', () => {
       assert.instanceOf(context, httpTransport.context);
     });
 
-    it('emits a timeout cache event with with the correct context', async() => {
+    it('emits a timeout cache event with with the correct context', async () => {
       const cache = createCache();
       api.get('/').reply(500, defaultResponse, defaultHeaders);
 
@@ -352,7 +352,7 @@ describe('Stale-If-Error', () => {
       assert.fail('Expected to throw');
     });
 
-    it('emits a cache error event with with the correct context', async() => {
+    it('emits a cache error event with with the correct context', async () => {
       const cache = createCache();
       api.get('/').reply(500, defaultResponse, defaultHeaders);
 

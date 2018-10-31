@@ -710,7 +710,7 @@ describe('Max-Age', () => {
       assert.instanceOf(context, httpTransport.context);
     });
 
-    it('returns a context from a cache timeout event emission', async() => {
+    it('returns a context from a cache timeout event emission', async () => {
       const cache = createCache();
       api.get('/').reply(200, defaultResponse, defaultHeaders);
 
@@ -732,7 +732,7 @@ describe('Max-Age', () => {
       assert.fail('Expected to throw');
     });
 
-    it('returns a context from a cache error event emission', async() => {
+    it('returns a context from a cache error event emission', async () => {
       const cache = createCache();
       api.get('/').reply(200, defaultResponse, defaultHeaders);
 
