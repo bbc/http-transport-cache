@@ -6,13 +6,18 @@ const sandbox = require('sinon').sandbox;
 const getRequestId = require('../lib/getRequestId');
 
 describe('Get-request-ID', () => {
+  const requestKey = 'GET:host.com?a=1';
+  const requestHeaders = {
+    experiment: 'test',
+    status: 200,
+    'Request-ID': '123'
+  };
+
   beforeEach(() => {
     sandbox.restore();
   });
 
   it('returns request key with headers appended', async () => {
-    const requestKey = 'GET:host.com?a=1';
-    const requestHeaders = { experiment: 'test', status: 200 };
     const getRequestKeyStub = sandbox.stub().returns(requestKey);
     const getHeadersStub = sandbox.stub().returns(requestHeaders);
     const req = {
@@ -20,8 +25,22 @@ describe('Get-request-ID', () => {
       getHeaders: getHeadersStub
     };
 
-    const expectedKey = `${requestKey}${JSON.stringify(requestHeaders)}`;
+    const expectedKey = 'GET:host.com?a=1{"experiment":"test","status":200,"Request-ID":"123"}';
     const key = getRequestId(req);
+
+    assert.strictEqual(key, expectedKey);
+  });
+
+  it('excludes headers that are specficed in doNotVary', () => {
+    const getRequestKeyStub = sandbox.stub().returns(requestKey);
+    const getHeadersStub = sandbox.stub().returns(requestHeaders);
+    const req = {
+      getRequestKey: getRequestKeyStub,
+      getHeaders: getHeadersStub
+    };
+
+    const expectedKey = 'GET:host.com?a=1{"experiment":"test","status":200}';
+    const key = getRequestId(req, ['Request-ID']);
 
     assert.strictEqual(key, expectedKey);
   });
