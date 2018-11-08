@@ -260,6 +260,85 @@ describe('Stale-If-Error', () => {
     assert.ok(called);
   });
 
+  describe.only('Use cache key with headers', () => {
+    const expectedHeadersStr = '{"User-Agent":"@bbc/http-transport/3.4.2"}';
+    const bodySegmentWithHeaders = `${bodySegment}${expectedHeadersStr}`;
+
+    it('stores cached values for the stale-if-error value', async () => {
+      const cache = createCache();
+      await cache.start();
+
+      api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+      const maxAge = 60000;
+      const staleIfError = 7200000;
+      const expiry = Date.now() + maxAge + staleIfError;
+
+      await requestWithCache(cache, { useKeyWithHeaders: true });
+      const cached = await cache.get(bodySegmentWithHeaders);
+      const actualExpiry = cached.ttl + cached.stored;
+      const differenceInExpires = actualExpiry - expiry;
+
+      assert.deepEqual(cached.item.body, defaultResponse.body);
+      assert(differenceInExpires < 1000 && differenceInExpires >= 0);
+    });
+
+    it('does not create cache entries for critical errors', async () => {
+      const catbox = createCache();
+
+      api.get('/').reply(500, defaultResponse.body, defaultHeaders);
+
+      await httpTransport
+        .createClient()
+        .use(cache.staleIfError(catbox, { useKeyWithHeaders: true }))
+        .get('http://www.example.com/')
+        .asResponse();
+
+      const cached = await catbox.get(bodySegmentWithHeaders);
+      assert.isNull(cached);
+    });
+
+    it('does create cache entries for client errors', async () => {
+      const catbox = createCache();
+
+      api.get('/').reply(404, defaultResponse.body, defaultHeaders);
+
+      await httpTransport
+        .createClient()
+        .use(cache.staleIfError(catbox, { useKeyWithHeaders: true }))
+        .get('http://www.example.com/')
+        .asResponse();
+
+      const cached = await catbox.get(bodySegment);
+      assert.deepEqual(cached.item.body, defaultResponse.body);
+    });
+
+    it('does not create cache entries for items fetched from another cache', async () => {
+      const nearCache = createCache();
+      const farCache = createCache();
+
+      api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+      const client = httpTransport.createClient();
+
+      // populate the far-away cache first
+      await client
+        .use(cache.staleIfError(farCache, { useKeyWithHeaders: true }))
+        .get('http://www.example.com/')
+        .asResponse();
+
+      // response will originate from the far-away cache
+      await client
+        .use(cache.staleIfError(nearCache, { useKeyWithHeaders: true }))
+        .use(cache.staleIfError(farCache, { useKeyWithHeaders: true }))
+        .get('http://www.example.com/')
+        .asResponse();
+
+      const cachedItem = await nearCache.get(bodySegment);
+      assert.isNull(cachedItem);
+    });
+  });
+
   describe('Events', () => {
     const cachedResponse = {
       body: 'http-transport',
