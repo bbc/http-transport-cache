@@ -31,6 +31,20 @@ describe('Get-request-ID', () => {
     assert.strictEqual(key, expectedKey);
   });
 
+  it('returns request key with no headers appended if there are no headers', async () => {
+    const getRequestKeyStub = sandbox.stub().returns(requestKey);
+    const getHeadersStub = sandbox.stub().returns({});
+    const req = {
+      getRequestKey: getRequestKeyStub,
+      getHeaders: getHeadersStub
+    };
+
+    const expectedKey = 'GET:host.com?a=1';
+    const key = getRequestId(req);
+
+    assert.strictEqual(key, expectedKey);
+  });
+
   it('excludes headers that are specficed in doNotVary', () => {
     const getRequestKeyStub = sandbox.stub().returns(requestKey);
     const getHeadersStub = sandbox.stub().returns(requestHeaders);
