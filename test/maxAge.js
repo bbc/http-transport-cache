@@ -573,6 +573,80 @@ describe('Max-Age', () => {
     });
   });
 
+  describe('Use cache keys with headers', () => {
+    const expectedHeadersStr = '{"User-Agent":"@bbc/http-transport/3.4.2","test":123}';
+
+    it('keys cache entries by method and url', async () => {
+      const cache = createCache();
+      api.get('/some-cacheable-path').reply(200, defaultResponse.body, defaultHeaders);
+
+      const expiry = Date.now() + 60000;
+
+      await createCacheClient(cache, { useKeyWithHeaders: true })
+        .headers({ 'test': 123 })
+        .get('http://www.example.com/some-cacheable-path')
+        .asResponse();
+
+      const cached = await cache.get({
+        segment: `http-transport:${VERSION}:body`,
+        id: `GET:http://www.example.com/some-cacheable-path${expectedHeadersStr}`
+      });
+
+      const actualExpiry = cached.ttl + cached.stored;
+      const differenceInExpires = actualExpiry - expiry;
+
+      assert.deepEqual(cached.item.body, defaultResponse.body);
+      assert(differenceInExpires < 1000);
+    });
+
+    it('keys cache entries by url including query strings in request url', async () => {
+      const cache = createCache();
+      api.get('/some-cacheable-path?d=ank').reply(200, defaultResponse.body, defaultHeaders);
+
+      const expiry = Date.now() + 60000;
+
+      await createCacheClient(cache, { useKeyWithHeaders: true })
+        .headers({ 'test': 123 })
+        .get('http://www.example.com/some-cacheable-path?d=ank')
+        .asResponse();
+
+      const cached = await cache.get({
+        segment: `http-transport:${VERSION}:body`,
+        id: `GET:http://www.example.com/some-cacheable-path?d=ank${expectedHeadersStr}`
+      });
+
+      const actualExpiry = cached.ttl + cached.stored;
+      const differenceInExpires = actualExpiry - expiry;
+
+      assert.deepEqual(cached.item.body, defaultResponse.body);
+      assert(differenceInExpires < 1000);
+    });
+
+    it('keys cache entries by url including query strings in query object', async () => {
+      const cache = createCache();
+      api.get('/some-cacheable-path?d=ank').reply(200, defaultResponse.body, defaultHeaders);
+
+      const expiry = Date.now() + 60000;
+
+      await createCacheClient(cache, { useKeyWithHeaders: true })
+        .headers({ 'test': 123 })
+        .get('http://www.example.com/some-cacheable-path')
+        .query('d', 'ank')
+        .asResponse();
+
+      const cached = await cache.get({
+        segment: `http-transport:${VERSION}:body`,
+        id: `GET:http://www.example.com/some-cacheable-path?d=ank${expectedHeadersStr}`
+      });
+
+      const actualExpiry = cached.ttl + cached.stored;
+      const differenceInExpires = actualExpiry - expiry;
+
+      assert.deepEqual(cached.item.body, defaultResponse.body);
+      assert(differenceInExpires < 1000);
+    });
+  });
+
   it('does not store if cache control headers are non numbers', async () => {
     const cache = createCache();
     api.get('/').reply(200, defaultResponse.body, { 'cache-control': 'max-age=NAN'});
