@@ -44,4 +44,18 @@ describe('Get-request-ID', () => {
 
     assert.strictEqual(key, expectedKey);
   });
+
+  it('excludes headers in doNotVary when case does not match', () => {
+    const getRequestKeyStub = sandbox.stub().returns(requestKey);
+    const getHeadersStub = sandbox.stub().returns(requestHeaders);
+    const req = {
+      getRequestKey: getRequestKeyStub,
+      getHeaders: getHeadersStub
+    };
+
+    const expectedKey = 'GET:host.com?a=1{"experiment":"test","status":200}';
+    const key = getRequestId(req, ['request-id']);
+
+    assert.strictEqual(key, expectedKey);
+  });
 });
