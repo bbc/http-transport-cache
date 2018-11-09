@@ -71,6 +71,7 @@ Both `maxage` and `staleIfError` accept an options object.
 |`ignoreCacheErrors`|boolean|maxage,staleIfError| `cache.maxAge` will return a cache miss when this property is `true`. Setting this property true for `cache.staleIfError` will rethrow the original error (not the cache lookup error). `ignoreCacheErrors` is `false` by default.|
 |`timeout`|integer|maxage|Timeouts out a cache lookup after a specified number of ms. By default, no timeout is specified.|
 |`staleWhileRevalidate`|boolean|maxage|Enable stale while revalidate. The default is **false**|
+|`useKeyWithHeaders`|boolean|maxage,staleIfError|User headers in cache key. The default is **false**|
 
 ## Cache Key Structure
  
