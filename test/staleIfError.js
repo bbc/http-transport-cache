@@ -260,9 +260,12 @@ describe('Stale-If-Error', () => {
     assert.ok(called);
   });
 
-  describe.only('Use cache key with headers', () => {
+  describe('Use cache key with headers', () => {
     const expectedHeadersStr = '{"User-Agent":"@bbc/http-transport/3.4.2"}';
-    const bodySegmentWithHeaders = `${bodySegment}${expectedHeadersStr}`;
+    const bodySegmentWithHeaders = {
+      segment: `http-transport:${VERSION}:stale`,
+      id: `${bodySegment.id}${expectedHeadersStr}`
+    };
 
     it('stores cached values for the stale-if-error value', async () => {
       const cache = createCache();
@@ -309,7 +312,7 @@ describe('Stale-If-Error', () => {
         .get('http://www.example.com/')
         .asResponse();
 
-      const cached = await catbox.get(bodySegment);
+      const cached = await catbox.get(bodySegmentWithHeaders);
       assert.deepEqual(cached.item.body, defaultResponse.body);
     });
 
@@ -334,7 +337,7 @@ describe('Stale-If-Error', () => {
         .get('http://www.example.com/')
         .asResponse();
 
-      const cachedItem = await nearCache.get(bodySegment);
+      const cachedItem = await nearCache.get(bodySegmentWithHeaders);
       assert.isNull(cachedItem);
     });
   });
