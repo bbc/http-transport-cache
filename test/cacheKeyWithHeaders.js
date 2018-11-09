@@ -31,7 +31,7 @@ describe('Cache-key-with-headers', () => {
     assert.strictEqual(key, expectedKey);
   });
 
-  it('excludes headers that are specficed in doNotVary', () => {
+  it('excludes headers that are specified in doNotVary', () => {
     const expectedKey = 'GET:host.com?a=1{"experiment":"test","status":200}';
     const key = cacheKeyWithHeaders(requestKey, requestHeaders, ['Request-ID']);
 
