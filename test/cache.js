@@ -66,6 +66,15 @@ describe('Cache', () => {
     assert.fail();
   });
 
+  it('returns the value when set throws', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'set').rejects(new Error('Cache size limit reached'));
+
+    await cache.start();
+    const value = await storeInCache(cache, SEGMENT, ID, { a: 1 }, 600);
+    assert.deepEqual(value, { a: 1 });
+  });
+
   it('times out a request', async () => {
     const cache = createCache();
     let cacheLookupComplete = false;
@@ -198,6 +207,20 @@ describe('events', () => {
       return assert.ok(cacheError);
     }
     assert.fail();
+  });
+
+  it('emits a cache error event when set throws', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'set').rejects(new Error('error'));
+
+    let cacheError = false;
+    events.on('cache.error', () => {
+      cacheError = true;
+    });
+
+    await cache.start();
+    await storeInCache(cache, SEGMENT, ID, { a: 1 }, 600);
+    assert.ok(cacheError);
   });
 
   it('emits a cache error event when "ignoreCacheErrors" is true', async () => {
