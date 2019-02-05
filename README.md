@@ -67,7 +67,6 @@ const client = HttpTransport.createClient()
 |No Cache|If the response specifically includes a `no-cache` directive it will not be cached.|
 |Max Age|Responses are stored for the duration of the `max-age` directive and are used before any requests are made.|
 |Stale If Error|In order to ensure a resilient service even during errors, http responses can include a `cache-control` directive called `stale-if-error` which means we can use a cached response for that period whilst the service is erroring. To do this a separate response blob is stored for the stale period and on error this response is used alongside the body which is stored for the higher of either `max-age` or `stale-if-error`.|
-|Stale while revalidate|If enabled via the `staleWhileRevalidate` option and the cache control headers include the `stale-while-revalidate` directive, the cache module will serve a stale response while asynchronously refreshing the response in the background. Currently, only `GET` requests are supported.|
 
 ## Middleware Options
 
@@ -77,7 +76,6 @@ Both `maxage` and `staleIfError` accept an options object.
 |----|----|----|-----------|
 |`ignoreCacheErrors`|boolean|maxage,staleIfError| `cache.maxAge` will return a cache miss when this property is `true`. Setting this property true for `cache.staleIfError` will rethrow the original error (not the cache lookup error). `ignoreCacheErrors` is `false` by default.|
 |`timeout`|integer|maxage|Timeouts out a cache lookup after a specified number of ms. By default, no timeout is specified.|
-|`staleWhileRevalidate`|boolean|maxage|Enable stale while revalidate. The default is **false**|
 
 ## Cache Key Structure
  
