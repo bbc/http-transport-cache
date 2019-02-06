@@ -1,4 +1,5 @@
 [![NPM downloads](https://img.shields.io/npm/dm/@bbc/http-transport-cache.svg?style=flat)](https://npmjs.org/package/@bbc/http-transport-cache)
+[![Build Status](https://api.travis-ci.org/bbc/http-transport-cache.svg)](https://travis-ci.org/bbc/sqs-consumer) 
 ![npm](https://img.shields.io/npm/v/@bbc/http-transport-cache.svg)
  ![license](https://img.shields.io/badge/license-MIT-blue.svg) 
 ![github-issues](https://img.shields.io/github/issues/bbc/http-transport-cache.svg)
