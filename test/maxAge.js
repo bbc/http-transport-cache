@@ -71,6 +71,24 @@ describe('Max-Age', () => {
     assert(differenceInExpires < 1000);
   });
 
+  it('only caches for "max-age" when no other directives are specified', async () => {
+    const catbox = new Catbox.Client(new Memory());
+    sandbox.stub(catbox, 'get').resolves();
+    sandbox.stub(catbox, 'set').resolves();
+
+    api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+    await httpTransport
+      .createClient()
+      .use(cache.maxAge(catbox))
+      .use(cache.staleIfError(catbox))
+      .get('http://www.example.com/')
+      .asResponse();
+
+    sinon.assert.calledWith(catbox.set, bodySegment);
+    sinon.assert.callCount(catbox.set, 1);
+  });
+
   it('does not create cache entries for critical errors', async () => {
     const catbox = createCache();
 

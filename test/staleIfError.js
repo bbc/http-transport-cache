@@ -76,6 +76,36 @@ describe('Stale-If-Error', () => {
     assert(differenceInExpires < 1000 && differenceInExpires >= 0);
   });
 
+  it('only caches for "stale-if-error" when no other directives are specified', async () => {
+    const catbox = new Catbox.Client(new Memory());
+    sandbox.stub(catbox, 'get').resolves();
+    sandbox.stub(catbox, 'set').resolves();
+
+    const headers = {
+      'cache-control': 'stale-if-error=7200'
+    };
+
+    const response = {
+      body: 'I am a string!',
+      url: 'http://www.example.com/',
+      statusCode: 200,
+      elapsedTime: 40,
+      headers: headers
+    };
+
+    api.get('/').reply(200, response.body, headers);
+
+    await httpTransport
+      .createClient()
+      .use(cache.maxAge(catbox))
+      .use(cache.staleIfError(catbox))
+      .get('http://www.example.com/')
+      .asResponse();
+
+    sinon.assert.calledWith(catbox.set, bodySegment);
+    sinon.assert.callCount(catbox.set, 1);
+  });
+
   it('does not create cache entries for critical errors', async () => {
     const catbox = createCache();
 
