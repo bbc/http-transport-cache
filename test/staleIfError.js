@@ -148,7 +148,7 @@ describe('Stale-If-Error', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.equal(cached, null);
+    assert.isNull(cached);
   });
 
   it('does not store if no-store', async () => {
@@ -158,7 +158,7 @@ describe('Stale-If-Error', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.equal(cached, null);
+    assert.isNull(cached);
   });
 
   it('does not store if private', async () => {
@@ -168,7 +168,7 @@ describe('Stale-If-Error', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.equal(cached, null);
+    assert.isNull(cached);
   });
 
   it('stores even if no max-age', async () => {

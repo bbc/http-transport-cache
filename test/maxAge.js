@@ -329,7 +329,7 @@ describe('Max-Age', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.equal(cached, null);
+    assert.isNull(cached);
   });
 
   it('does not store if private', async () => {
@@ -339,7 +339,7 @@ describe('Max-Age', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.equal(cached, null);
+    assert.isNull(cached);
   });
 
   describe('Events', () => {
