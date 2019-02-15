@@ -67,9 +67,8 @@ const client = HttpTransport.createClient()
 |Warnings|The cached response only contains the simplified `http-transport` request and response so as not to waste cache space.|
 |Max Age|Responses are stored for the duration of the `max-age` directive and are used before any requests are made.|
 |Stale If Error|In order to ensure a resilient service even during errors, http responses can include a `cache-control` directive called `stale-if-error` which means we can use a cached response for that period whilst the service is erroring. To do this a separate response blob is stored for the stale period and on error this response is used alongside the body which is stored for the higher of either `max-age` or `stale-if-error`.|
-|No Store|If `no-store` directive is present in the response, it is not stored / cached anywhere.|
+|No Store|If `no-store` directive is present in the response, it will not be stored / cached anywhere.|
 |Private|If `private` directive is present in the response, it will not be stored by shared cache. The response will only be stored in a private cache intended for a single user.|
-
 
 ## Middleware Options
 
