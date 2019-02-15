@@ -284,11 +284,7 @@ describe('Max-Age', () => {
   it('does not store if max-age=0', async () => {
     const cache = createCache();
 
-    api.get('/').reply(200, defaultResponse, {
-      headers: {
-        'cache-control': 'max-age=0'
-      }
-    });
+    api.get('/').reply(200, defaultResponse, { 'cache-control': 'max-age=0' });
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
@@ -324,6 +320,26 @@ describe('Max-Age', () => {
     assert.equal(res.elapsedTime, cachedResponse.elapsedTime);
 
     await cache.drop(bodySegment);
+  });
+
+  it('does not store if no-store', async () => {
+    const cache = createCache();
+
+    api.get('/').reply(200, defaultResponse, { 'cache-control': 'no-store' });
+
+    await requestWithCache(cache);
+    const cached = await cache.get(bodySegment);
+    assert(!cached);
+  });
+
+  it('does not store if private', async () => {
+    const cache = createCache();
+
+    api.get('/').reply(200, defaultResponse, { 'cache-control': 'private' });
+
+    await requestWithCache(cache);
+    const cached = await cache.get(bodySegment);
+    assert(!cached);
   });
 
   describe('Events', () => {

@@ -144,29 +144,41 @@ describe('Stale-If-Error', () => {
   it('does not store if stale-if-error=0', async () => {
     const cache = createCache();
 
-    api.get('/').reply(200, defaultResponse, {
-      headers: {
-        'cache-control': 'stale-if-error=0'
-      }
-    });
+    api.get('/').reply(200, defaultResponse, { 'cache-control': 'stale-if-error=0' });
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert(!cached);
+    assert.equal(cached, null);
+  });
+
+  it('does not store if no-store', async () => {
+    const cache = createCache();
+
+    api.get('/').reply(200, defaultResponse, { 'cache-control': 'no-store' });
+
+    await requestWithCache(cache);
+    const cached = await cache.get(bodySegment);
+    assert.equal(cached, null);
+  });
+
+  it('does not store if private', async () => {
+    const cache = createCache();
+
+    api.get('/').reply(200, defaultResponse, { 'cache-control': 'private' });
+
+    await requestWithCache(cache);
+    const cached = await cache.get(bodySegment);
+    assert.equal(cached, null);
   });
 
   it('stores even if no max-age', async () => {
     const cache = createCache();
 
-    api.get('/').reply(200, defaultResponse, {
-      headers: {
-        'cache-control': 'stale-if-error=7200'
-      }
-    });
+    api.get('/').reply(200, defaultResponse, { 'cache-control': 'stale-if-error=7200' });
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert(!cached);
+    assert(cached);
   });
 
   it('does not store if cache control headers are non numbers', async () => {
