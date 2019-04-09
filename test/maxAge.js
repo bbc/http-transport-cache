@@ -1,6 +1,6 @@
 'use strict';
 
-const assert = require('chai').assert;
+const assert = require('assert');
 const httpTransport = require('@bbc/http-transport');
 const Catbox = require('catbox');
 const Memory = require('catbox-memory');
@@ -56,6 +56,35 @@ describe('Max-Age', () => {
     sandbox.restore();
   });
 
+  it('starts the cache if it\'s not already started', async () => {
+    const cache = createCache();
+    sandbox.spy(cache, 'start');
+
+    api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+    await requestWithCache(cache);
+
+    sandbox.assert.called(cache.start);
+  });
+
+  it('throws the error that starting the cache throws', async () => {
+    api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
+    const cache = createCache();
+    const startError = new Error('Error starting da cache');
+    sandbox.stub(cache, 'start').rejects(startError);
+
+    assert.rejects(() => requestWithCache(cache, { ignoreCacheErrors: false }), startError);
+  });
+
+  it('does not throw the error that starting the cache throws when ignoreCacheErrors is true', async () => {
+    api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
+    const cache = createCache();
+    const startError = new Error('Error starting da cache');
+    sandbox.stub(cache, 'start').rejects(startError);
+
+    return assert.doesNotReject(() => requestWithCache(cache, { ignoreCacheErrors: true }), /Error starting da cache/);
+  });
+
   it('stores cached values for the max-age value', async () => {
     const cache = createCache();
     api.get('/').reply(200, defaultResponse.body, defaultHeaders);
@@ -102,7 +131,7 @@ describe('Max-Age', () => {
 
     const cached = await catbox.get(bodySegment);
 
-    assert.isNull(cached);
+    assert.strictEqual(cached, null);
   });
 
   it('does create cache entries for client errors', async () => {
@@ -146,7 +175,7 @@ describe('Max-Age', () => {
 
     const cachedItem = await nearCache.get(bodySegment);
 
-    assert.isBelow(cachedItem.ttl, 59950);
+    assert(cachedItem.ttl < 59950);
   });
 
   it('ignore cache lookup errors', async () => {
@@ -181,7 +210,7 @@ describe('Max-Age', () => {
         .get('http://www.example.com/')
         .asBody();
     } catch (err) {
-      assert.isFalse(cacheLookupComplete);
+      assert.strictEqual(cacheLookupComplete, false);
       return assert.equal(err.message, `Cache timed out after ${timeout}`);
     }
     assert.fail('Expected to throw');
@@ -208,7 +237,7 @@ describe('Max-Age', () => {
     } catch (err) {
       return assert.fail(null, null, 'Failed on timeout');
     }
-    assert.isFalse(cacheLookupComplete);
+    assert.strictEqual(cacheLookupComplete, false);
     assert.equal(body, defaultResponse.body);
   });
 
@@ -347,7 +376,7 @@ describe('Max-Age', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.isNull(cached);
+    assert.strictEqual(cached, null);
   });
 
   it('does not store if private', async () => {
@@ -357,7 +386,7 @@ describe('Max-Age', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.isNull(cached);
+    assert.strictEqual(cached, null);
   });
 
   describe('Events', () => {
@@ -417,7 +446,7 @@ describe('Max-Age', () => {
       await requestWithCache(cache);
       await requestWithCache(cache);
 
-      assert.instanceOf(context, httpTransport.context);
+      assert(context instanceof httpTransport.context);
     });
 
     it('returns a context from a cache miss event emission', async () => {
@@ -431,7 +460,7 @@ describe('Max-Age', () => {
 
       await requestWithCache(cache);
 
-      assert.instanceOf(context, httpTransport.context);
+      assert(context instanceof httpTransport.context);
     });
 
     it('returns a context from a cache timeout event emission', async () => {
@@ -450,7 +479,7 @@ describe('Max-Age', () => {
       try {
         await requestWithCache(cache, { timeout: 10 });
       } catch (err) {
-        return assert.instanceOf(context, httpTransport.context);
+        return assert(context instanceof httpTransport.context);
       }
 
       assert.fail('Expected to throw');
@@ -470,7 +499,7 @@ describe('Max-Age', () => {
       try {
         await requestWithCache(cache);
       } catch (err) {
-        return assert.instanceOf(context, httpTransport.context);
+        return assert(context instanceof httpTransport.context);
       }
 
       assert.fail('Expected to throw');
