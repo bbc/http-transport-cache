@@ -76,13 +76,27 @@ describe('Max-Age', () => {
     assert.rejects(() => requestWithCache(cache, { ignoreCacheErrors: false }), startError);
   });
 
-  it('does not throw the error that starting the cache throws when ignoreCacheErrors is true', async () => {
-    api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
-    const cache = createCache();
+  it('does not throw the error that starting the cache throws and continues to next middleware when ignoreCacheErrors is true', async () => {
+    const catbox = createCache();
     const startError = new Error('Error starting da cache');
-    sandbox.stub(cache, 'start').rejects(startError);
+    sandbox.stub(catbox, 'start').rejects(startError);
+    api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
 
-    return assert.doesNotReject(() => requestWithCache(cache, { ignoreCacheErrors: true }), /Error starting da cache/);
+    let called = false;
+    function requestWithCacheAndNextMiddleware() {
+      return httpTransport
+        .createClient()
+        .use(cache.maxAge(catbox, { ignoreCacheErrors: true }))
+        .use((ctx, next) => {
+          called = true;
+          return next();
+        })
+        .get('http://www.example.com/')
+        .asResponse();
+    }
+
+    await assert.doesNotReject(requestWithCacheAndNextMiddleware, /Error starting da cache/);
+    assert.equal(called, true, 'Expected the next middleware to be called');
   });
 
   it('stores cached values for the max-age value', async () => {
