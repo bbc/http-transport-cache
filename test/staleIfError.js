@@ -1,6 +1,6 @@
 'use strict';
 
-const assert = require('chai').assert;
+const assert = require('assert');
 const Catbox = require('catbox');
 const Memory = require('catbox-memory');
 const nock = require('nock');
@@ -55,6 +55,35 @@ describe('Stale-If-Error', () => {
   afterEach(() => {
     nock.cleanAll();
     sandbox.restore();
+  });
+
+  it('starts the cache if it\'s not already started', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'start');
+
+    api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+    await requestWithCache(cache);
+
+    sandbox.assert.called(cache.start);
+  });
+
+  it('throws the error that starting the cache throws', async () => {
+    api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
+    const cache = createCache();
+    const startError = new Error('Error starting da cache');
+    sandbox.stub(cache, 'start').rejects(startError);
+
+    assert.rejects(() => requestWithCache(cache, { ignoreCacheErrors: false }), startError);
+  });
+
+  it('does not throw the error that starting the cache throws when ignoreCacheErrors is true', async () => {
+    api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
+    const cache = createCache();
+    const startError = new Error('Error starting da cache');
+    sandbox.stub(cache, 'start').rejects(startError);
+
+    assert.doesNotReject(() => requestWithCache(cache, { ignoreCacheErrors: true }), startError);
   });
 
   it('stores cached values for the stale-if-error value', async () => {
@@ -118,7 +147,7 @@ describe('Stale-If-Error', () => {
       .asResponse();
 
     const cached = await catbox.get(bodySegment);
-    assert.isNull(cached);
+    assert.strictEqual(cached, null);
   });
 
   it('does create cache entries for client errors', async () => {
@@ -158,7 +187,7 @@ describe('Stale-If-Error', () => {
       .asResponse();
 
     const cachedItem = await nearCache.get(bodySegment);
-    assert.isNull(cachedItem);
+    assert.strictEqual(cachedItem, null);
   });
 
   it('does not store if no cache-control', async () => {
@@ -178,7 +207,7 @@ describe('Stale-If-Error', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.isNull(cached);
+    assert.strictEqual(cached, null);
   });
 
   it('does not store if no-store', async () => {
@@ -188,7 +217,7 @@ describe('Stale-If-Error', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.isNull(cached);
+    assert.strictEqual(cached, null);
   });
 
   it('does not store if private', async () => {
@@ -198,7 +227,7 @@ describe('Stale-If-Error', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.isNull(cached);
+    assert.strictEqual(cached, null);
   });
 
   it('stores even if no max-age', async () => {
@@ -366,7 +395,7 @@ describe('Stale-If-Error', () => {
       await cache.set(bodySegment, cachedResponse, 7200);
       await requestWithCache(cache, opts);
 
-      assert.instanceOf(context, httpTransport.context);
+      assert(context instanceof httpTransport.context);
     });
 
     it('emits a timeout cache event with the correct context', async () => {
@@ -388,7 +417,7 @@ describe('Stale-If-Error', () => {
       try {
         await requestWithCache(cache, { timeout: 10 });
       } catch (err) {
-        return assert.instanceOf(context, httpTransport.context);
+        return assert(context instanceof httpTransport.context);
       }
 
       assert.fail('Expected to throw');
@@ -411,7 +440,7 @@ describe('Stale-If-Error', () => {
       try {
         await requestWithCache(cache);
       } catch (err) {
-        return assert.instanceOf(context, httpTransport.context);
+        return assert(context instanceof httpTransport.context);
       }
 
       assert.fail('Expected to throw');
