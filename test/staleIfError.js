@@ -59,7 +59,7 @@ describe('Stale-If-Error', () => {
 
   it('starts the cache if it\'s not already started', async () => {
     const cache = createCache();
-    sandbox.stub(cache, 'start');
+    sandbox.spy(cache, 'start');
 
     api.get('/').reply(200, defaultResponse.body, defaultHeaders);
 
@@ -74,7 +74,7 @@ describe('Stale-If-Error', () => {
     const startError = new Error('Error starting da cache');
     sandbox.stub(cache, 'start').rejects(startError);
 
-    assert.rejects(() => requestWithCache(cache, { ignoreCacheErrors: false }), startError);
+    return assert.rejects(() => requestWithCache(cache, { ignoreCacheErrors: false }), startError);
   });
 
   it('does not throw the error that starting the cache throws when ignoreCacheErrors is true', async () => {
@@ -83,7 +83,7 @@ describe('Stale-If-Error', () => {
     const startError = new Error('Error starting da cache');
     sandbox.stub(cache, 'start').rejects(startError);
 
-    assert.doesNotReject(() => requestWithCache(cache, { ignoreCacheErrors: true }), startError);
+    return assert.doesNotReject(() => requestWithCache(cache, { ignoreCacheErrors: true }), /Error starting da cache/);
   });
 
   it('stores cached values for the stale-if-error value', async () => {
