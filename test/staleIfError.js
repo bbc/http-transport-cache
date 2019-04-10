@@ -1,6 +1,7 @@
 'use strict';
 
-const assert = require('assert');
+const assert = require('chai').assert;
+const { rejects, doesNotReject } = require('assert');
 const Catbox = require('catbox');
 const Memory = require('catbox-memory');
 const nock = require('nock');
@@ -74,7 +75,7 @@ describe('Stale-If-Error', () => {
     const startError = new Error('Error starting da cache');
     sandbox.stub(cache, 'start').rejects(startError);
 
-    return assert.rejects(() => requestWithCache(cache, { ignoreCacheErrors: false }), startError);
+    return rejects(() => requestWithCache(cache, { ignoreCacheErrors: false }), startError);
   });
 
   it('does not throw the error that starting the cache throws and continues to next middleware when ignoreCacheErrors is true', async () => {
@@ -96,7 +97,7 @@ describe('Stale-If-Error', () => {
         .asResponse();
     }
 
-    await assert.doesNotReject(requestWithCacheAndNextMiddleware, /Error starting da cache/);
+    await doesNotReject(requestWithCacheAndNextMiddleware, /Error starting da cache/);
     assert.strictEqual(called, true, 'Expected the next middleware to be called');
   });
 
@@ -161,7 +162,7 @@ describe('Stale-If-Error', () => {
       .asResponse();
 
     const cached = await catbox.get(bodySegment);
-    assert.strictEqual(cached, null);
+    assert.isNull(cached);
   });
 
   it('does create cache entries for client errors', async () => {
@@ -221,7 +222,7 @@ describe('Stale-If-Error', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.strictEqual(cached, null);
+    assert.isNull(cached);
   });
 
   it('does not store if no-store', async () => {
@@ -231,7 +232,7 @@ describe('Stale-If-Error', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.strictEqual(cached, null);
+    assert.isNull(cached);
   });
 
   it('does not store if private', async () => {
@@ -241,7 +242,7 @@ describe('Stale-If-Error', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.strictEqual(cached, null);
+    assert.isNull(cached);
   });
 
   it('stores even if no max-age', async () => {
@@ -410,7 +411,7 @@ describe('Stale-If-Error', () => {
       await cache.set(bodySegment, cachedResponse, 7200);
       await requestWithCache(cache, opts);
 
-      assert(context instanceof httpTransport.context);
+      assert.instanceOf(context, httpTransport.context);
     });
 
     it('emits a timeout cache event with the correct context', async () => {
@@ -432,7 +433,7 @@ describe('Stale-If-Error', () => {
       try {
         await requestWithCache(cache, { timeout: 10 });
       } catch (err) {
-        return assert(context instanceof httpTransport.context);
+        return assert.instanceOf(context, httpTransport.context);
       }
 
       assert.fail('Expected to throw');
@@ -455,7 +456,7 @@ describe('Stale-If-Error', () => {
       try {
         await requestWithCache(cache);
       } catch (err) {
-        return assert(context instanceof httpTransport.context);
+        return assert.instanceOf(context, httpTransport.context);
       }
 
       assert.fail('Expected to throw');
