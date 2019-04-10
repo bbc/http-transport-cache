@@ -202,7 +202,7 @@ describe('Stale-If-Error', () => {
       .asResponse();
 
     const cachedItem = await nearCache.get(bodySegment);
-    assert.strictEqual(cachedItem, null);
+    assert.isNull(cachedItem);
   });
 
   it('does not store if no cache-control', async () => {
@@ -288,7 +288,6 @@ describe('Stale-If-Error', () => {
 
     return cache.drop(bodySegment);
   });
-
   it('returns the original error if nothing in cache', async () => {
     const cache = createCache();
     api.get('/').reply(500, defaultResponse, {});
