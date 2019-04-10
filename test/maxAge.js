@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('chai').assert;
+const { rejects, doesNotReject } = require('assert');
 const httpTransport = require('@bbc/http-transport');
 const Catbox = require('catbox');
 const Memory = require('catbox-memory');
@@ -54,6 +55,49 @@ describe('Max-Age', () => {
   afterEach(() => {
     nock.cleanAll();
     sandbox.restore();
+  });
+
+  it('starts the cache if it\'s not already started', async () => {
+    const cache = createCache();
+    sandbox.spy(cache, 'start');
+
+    api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+    await requestWithCache(cache);
+
+    sandbox.assert.called(cache.start);
+  });
+
+  it('throws the error that starting the cache throws', async () => {
+    api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
+    const cache = createCache();
+    const startError = new Error('Error starting da cache');
+    sandbox.stub(cache, 'start').rejects(startError);
+
+    rejects(() => requestWithCache(cache, { ignoreCacheErrors: false }), startError);
+  });
+
+  it('does not throw the error that starting the cache throws and continues to next middleware when ignoreCacheErrors is true', async () => {
+    const catbox = createCache();
+    const startError = new Error('Error starting da cache');
+    sandbox.stub(catbox, 'start').rejects(startError);
+    api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
+
+    let called = false;
+    function requestWithCacheAndNextMiddleware() {
+      return httpTransport
+        .createClient()
+        .use(cache.maxAge(catbox, { ignoreCacheErrors: true }))
+        .use((ctx, next) => {
+          called = true;
+          return next();
+        })
+        .get('http://www.example.com/')
+        .asResponse();
+    }
+
+    await doesNotReject(requestWithCacheAndNextMiddleware, /Error starting da cache/);
+    assert.equal(called, true, 'Expected the next middleware to be called');
   });
 
   it('stores cached values for the max-age value', async () => {
