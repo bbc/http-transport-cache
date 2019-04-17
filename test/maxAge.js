@@ -51,7 +51,7 @@ async function requestWithCache(catbox, opts) {
     .asResponse();
 }
 
-describe.only('Max-Age', () => {
+describe('Max-Age', () => {
   afterEach(() => {
     nock.cleanAll();
     sandbox.restore();
@@ -324,7 +324,7 @@ describe.only('Max-Age', () => {
       assert(differenceInExpires < 1000);
     });
 
-    it('key cache entries with additional whitelist options', async() => {
+    it('keys cache entries by method and url with the additional varyOn values if matched with the request headers', async() => {
       const headers = {
         'cache-control': 'max-age=60',
         'accept-language': 'en',

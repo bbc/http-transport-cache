@@ -18,7 +18,7 @@ const events = require('../').events;
 const VERSION = require('../package').version;
 const api = nock('http://www.example.com');
 
-const sandbox = sinon.sandbox.create();
+const sandbox = sinon.createSandbox();
 
 const defaultHeaders = {
   'cache-control': 'max-age=60,stale-if-error=7200'
