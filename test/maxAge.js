@@ -9,7 +9,7 @@ const nock = require('nock');
 const bluebird = require('bluebird');
 const sinon = require('sinon');
 
-const sandbox = sinon.sandbox.create();
+const sandbox = sinon.createSandbox();
 const cache = require('../');
 const { events } = cache;
 
@@ -51,7 +51,7 @@ async function requestWithCache(catbox, opts) {
     .asResponse();
 }
 
-describe('Max-Age', () => {
+describe.only('Max-Age', () => {
   afterEach(() => {
     nock.cleanAll();
     sandbox.restore();
@@ -315,6 +315,41 @@ describe('Max-Age', () => {
       const cached = await cache.get({
         segment: `http-transport:${VERSION}:body`,
         id: 'GET:http://www.example.com/some-cacheable-path?d=ank'
+      });
+
+      const actualExpiry = cached.ttl + cached.stored;
+      const differenceInExpires = actualExpiry - expiry;
+
+      assert.deepEqual(cached.item.body, defaultResponse.body);
+      assert(differenceInExpires < 1000);
+    });
+
+    it('key cache entries with additional whitelist options', async() => {
+      const headers = {
+        'cache-control': 'max-age=60',
+        'accept-language': 'en',
+        'accept': 'application/json'
+      };
+      const cache = createCache();
+      api.get('/some-cacheable-path').reply(200, defaultResponse.body, headers);
+
+      const expiry = Date.now() + 60000;
+
+      const opts = {
+        varyOn: [
+          'accept-language',
+          'accept'
+        ]
+      };
+
+      await createCacheClient(cache, opts)
+        .headers(headers)
+        .get('http://www.example.com/some-cacheable-path')
+        .asResponse();
+
+      const cached = await cache.get({
+        segment: `http-transport:${VERSION}:body`,
+        id: 'GET:http://www.example.com/some-cacheable-path:accept-language=en,accept=application/json'
       });
 
       const actualExpiry = cached.ttl + cached.stored;
