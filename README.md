@@ -90,6 +90,8 @@ Additionally, cache keys can be configured by passing a `varyOn` option. `varyOn
 
 Example:
 
+We make a `GET` request to the following URL: `www.example.com/some-cacheable-path`.
+
 We vary on `accept-language` and `accept`. These headers will exist in the request. We pass in `varyOn` together with other options to configure the plugin.
 
 ```js
@@ -102,11 +104,11 @@ const opts = {
 };
 ```
 
-On the first request, `accept-language` is `en` and `accept` is `application/json`. The resulting key will be:
+On the first request, the value of `accept-language` is `en` and `accept` is `application/json`. The resulting key will be:
 
 * GET:www.example.com/some-cacheable-path:accept-language=en,accept=application/json
 
-On the second request, `accept-language` is `fr` and `accept` is `text/html`. The resulting key will be:
+On the second request, the value of `accept-language` is `fr` and `accept` is `text/html`. The resulting key will be:
 
 * GET:www.example.com/some-cacheable-path:accept-language=fr,accept=text/html
 
