@@ -324,7 +324,7 @@ describe('Max-Age', () => {
       assert(differenceInExpires < 1000);
     });
 
-    it('keys cache entries by method and url with the additional varyOn values if matched with the request headers', async() => {
+    it('keys cache entries by method and url with the additional varyOn keys and values if matched with the request headers', async () => {
       const headers = {
         'cache-control': 'max-age=60',
         'accept-language': 'en',
@@ -350,6 +350,41 @@ describe('Max-Age', () => {
       const cached = await cache.get({
         segment: `http-transport:${VERSION}:body`,
         id: 'GET:http://www.example.com/some-cacheable-path:accept-language=en,accept=application/json'
+      });
+
+      const actualExpiry = cached.ttl + cached.stored;
+      const differenceInExpires = actualExpiry - expiry;
+
+      assert.deepEqual(cached.item.body, defaultResponse.body);
+      assert(differenceInExpires < 1000);
+    });
+
+    it('keys cache entries by method and url with the additional varyOn keys and empty values if not matched with the request headers', async () => {
+      const headers = {
+        'cache-control': 'max-age=60',
+        'accept-language': 'en',
+        'accept': 'application/json'
+      };
+      const cache = createCache();
+      api.get('/some-cacheable-path').reply(200, defaultResponse.body, headers);
+
+      const expiry = Date.now() + 60000;
+
+      const opts = {
+        varyOn: [
+          'some-rand-header-a',
+          'some-rand-header-b'
+        ]
+      };
+
+      await createCacheClient(cache, opts)
+        .headers(headers)
+        .get('http://www.example.com/some-cacheable-path')
+        .asResponse();
+
+      const cached = await cache.get({
+        segment: `http-transport:${VERSION}:body`,
+        id: 'GET:http://www.example.com/some-cacheable-path:some-rand-header-a=,some-rand-header-b='
       });
 
       const actualExpiry = cached.ttl + cached.stored;
