@@ -86,6 +86,32 @@ The cache uses `catbox` to provide a simple pluggable interface, this supports s
 * http-transport:{version}:response - Basic response from a call cached for the duration of the `max-age` value key on just the URL of the response.
 * http-transport:{version}:staleResponse - Stale response from a called cached for the `stale-if-error` value keyed on just the URL of the response.
 
+Additionally, cache keys can be configured by passing a `varyOn` option. `varyOn` should be an array containing values that you want to vary on. For example, let's say you make requests to the same endpoint but values of some headers vary. By letting `http-transport-cache` know which headers vary, it will first check whether the headers actually exist in the request. If they do then it will construct a unique cache key which contains headers and their values.
+
+Example:
+
+We vary on `accept-language` and `accept`. These headers will exist in the request. We pass in `varyOn` together with other options to configure the plugin.
+
+```js
+const opts = {
+  timeout: 2000,
+  varyOn: [
+    'accept-language',
+    'accept'
+  ]
+};
+```
+
+On the first request, `accept-language` is `en` and `accept` is `application/json`. The resulting key will be:
+
+* GET:www.example.com/some-cacheable-path:accept-language=en,accept=application/json
+
+On the second request, `accept-language` is `fr` and `accept` is `text/html`. The resulting key will be:
+
+* GET:www.example.com/some-cacheable-path:accept-language=fr,accept=text/html
+
+This way we avoid overwritting data in the store.
+
 ## Test
 
 ```
