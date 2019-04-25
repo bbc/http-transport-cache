@@ -18,7 +18,7 @@ const events = require('../').events;
 const VERSION = require('../package').version;
 const api = nock('http://www.example.com');
 
-const sandbox = sinon.sandbox.create();
+const sandbox = sinon.createSandbox();
 
 const defaultHeaders = {
   'cache-control': 'max-age=60,stale-if-error=7200'
@@ -41,6 +41,11 @@ nock.disableNetConnect();
 
 function createCache() {
   return new Catbox.Client(new Memory());
+}
+
+function createCacheClient(catbox, opts) {
+  return httpTransport.createClient()
+    .use(cache.staleIfError(catbox, opts));
 }
 
 function requestWithCache(catbox, opts) {
@@ -288,6 +293,7 @@ describe('Stale-If-Error', () => {
 
     return cache.drop(bodySegment);
   });
+
   it('returns the original error if nothing in cache', async () => {
     const cache = createCache();
     api.get('/').reply(500, defaultResponse, {});
@@ -459,6 +465,132 @@ describe('Stale-If-Error', () => {
       }
 
       assert.fail('Expected to throw');
+    });
+  });
+
+  describe('Cache keys', () => {
+    it('keys cache entries by method and url', async () => {
+      const cache = createCache();
+
+      api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+      const maxAge = 60000;
+      const staleIfError = 7200000;
+      const expiry = Date.now() + maxAge + staleIfError;
+
+      await createCacheClient(cache)
+        .get('http://www.example.com/')
+        .asResponse();
+
+      const cached = await cache.get({
+        segment: `http-transport:${VERSION}:stale`,
+        id: 'GET:http://www.example.com/'
+      });
+
+      const actualExpiry = cached.ttl + cached.stored;
+      const differenceInExpires = actualExpiry - expiry;
+
+      assert.deepEqual(cached.item.body, defaultResponse.body);
+      assert(differenceInExpires < 1000);
+    });
+
+    it('keys cache entries by url including query strings in request url', async () => {
+      const cache = createCache();
+
+      api.get('/?q=about').reply(200, defaultResponse.body, defaultHeaders);
+
+      const maxAge = 60000;
+      const staleIfError = 7200000;
+      const expiry = Date.now() + maxAge + staleIfError;
+
+      await createCacheClient(cache)
+        .get('http://www.example.com/?q=about')
+        .asResponse();
+
+      const cached = await cache.get({
+        segment: `http-transport:${VERSION}:stale`,
+        id: 'GET:http://www.example.com/?q=about'
+      });
+
+      const actualExpiry = cached.ttl + cached.stored;
+      const differenceInExpires = actualExpiry - expiry;
+
+      assert.deepEqual(cached.item.body, defaultResponse.body);
+      assert(differenceInExpires < 1000);
+    });
+
+    it('keys cache entries by method and url with the additional varyOn keys and values if matched with the request headers', async () => {
+      const headers = {
+        'cache-control': 'max-age=60,stale-if-error=7200',
+        'accept-language': 'en',
+        'accept': 'application/json'
+      };
+      const cache = createCache();
+      api.get('/some-cacheable-path').reply(200, defaultResponse.body, headers);
+
+      const opts = {
+        varyOn: [
+          'accept-language',
+          'accept'
+        ]
+      };
+
+      const maxAge = 60000;
+      const staleIfError = 7200000;
+      const expiry = Date.now() + maxAge + staleIfError;
+
+      await createCacheClient(cache, opts)
+        .headers(headers)
+        .get('http://www.example.com/some-cacheable-path')
+        .asResponse();
+
+      const cached = await cache.get({
+        segment: `http-transport:${VERSION}:stale`,
+        id: 'GET:http://www.example.com/some-cacheable-path:accept-language=en,accept=application/json'
+      });
+
+      const actualExpiry = cached.ttl + cached.stored;
+      const differenceInExpires = actualExpiry - expiry;
+
+      assert.deepEqual(cached.item.body, defaultResponse.body);
+      assert(differenceInExpires < 1000);
+    });
+
+    it('keys cache entries by method and url with the additional varyOn keys and empty values if not matched with the request headers', async () => {
+      const headers = {
+        'cache-control': 'max-age=60,stale-if-error=7200',
+        'accept-language': 'en',
+        'accept': 'application/json'
+      };
+      const cache = createCache();
+      api.get('/some-cacheable-path').reply(200, defaultResponse.body, headers);
+
+      const opts = {
+        varyOn: [
+          'some-rand-header-a',
+          'some-rand-header-b'
+        ]
+      };
+
+      const maxAge = 60000;
+      const staleIfError = 7200000;
+      const expiry = Date.now() + maxAge + staleIfError;
+
+      await createCacheClient(cache, opts)
+        .headers(headers)
+        .get('http://www.example.com/some-cacheable-path')
+        .asResponse();
+
+      const cached = await cache.get({
+        segment: `http-transport:${VERSION}:stale`,
+        id: 'GET:http://www.example.com/some-cacheable-path:some-rand-header-a=,some-rand-header-b='
+      });
+
+      const actualExpiry = cached.ttl + cached.stored;
+      const differenceInExpires = actualExpiry - expiry;
+
+      assert.deepEqual(cached.item.body, defaultResponse.body);
+      assert(differenceInExpires < 1000);
     });
   });
 });
