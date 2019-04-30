@@ -102,6 +102,23 @@ describe('Cache', () => {
     assert.fail();
   });
 
+  it('times out a set request', async () => {
+    const cache = createCache();
+    const body = { a: 1 };
+
+    let cacheSetComplete = false;
+    sandbox.stub(cache, 'set').callsFake(async () => {
+      await bluebird.delay(100);
+      cacheSetComplete = true;
+    });
+
+    const timeout = 10;
+    const storeResult = await storeInCache(cache, SEGMENT, ctx, body, 600, { timeout });
+
+    assert.isFalse(cacheSetComplete);
+    assert.equal(storeResult, body);
+  });
+
   it('returns a cache miss when "ignoreCacheErrors" is true', async () => {
     const cache = createCache();
     sandbox.stub(cache, 'get').rejects(new Error('cache lookup failed!'));
@@ -131,6 +148,25 @@ describe('events', () => {
       return assert.deepStrictEqual(eventContext, ctx);
     }
     assert.fail();
+  });
+
+  it('emits a timeout event when set timeout occurs', async () => {
+    const cache = createCache();
+    const body = { a: 1 };
+
+    sandbox.stub(cache, 'set').callsFake(async () => {
+      await bluebird.delay(100);
+    });
+
+    let eventContext;
+    events.on('cache.timeout', (ctx) => {
+      eventContext = ctx;
+    });
+
+    await cache.start();
+    await storeInCache(cache, SEGMENT, ctx, body, 600, { timeout: 10 });
+
+    assert.deepStrictEqual(eventContext, ctx);
   });
 
   it('emits a cache error event with correct context', async () => {
