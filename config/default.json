@@ -1,9 +1,0 @@
-{
-  "stats": {
-    "prefix": "bbc.ibl.http_transport_cache.dev."
-  },
-  "logger": {
-    "level": "warn",
-    "file": "application.log"
-  }
-}

@@ -1,6 +1,5 @@
 'use strict';
 
-const stats = require('@ibl/stats');
 const assert = require('chai').assert;
 const Catbox = require('catbox');
 const Memory = require('catbox-memory');
@@ -42,7 +41,7 @@ const ctx = {
 
 describe('Cache', () => {
   beforeEach(() => {
-    sandbox.stub(stats, 'timing').returns();
+    sandbox.stub(events, 'on').returns();
   });
 
   afterEach(() => {
@@ -64,21 +63,6 @@ describe('Cache', () => {
     await storeInCache(cache, SEGMENT, ctx, { a: 1 }, 600);
     const cached = await getFromCache(cache, SEGMENT, ctx);
     assert.deepEqual(cached.item, { a: 1 });
-  });
-
-  it('sends time stats when storing a value in the cache', async () => {
-    const cache = createCache();
-    await cache.start();
-    await storeInCache(cache, SEGMENT, ctx, { a: 1 }, 600);
-    sinon.assert.calledWith(stats.timing, sinon.match('cache_write_time'), sinon.match.number);
-  });
-
-  it('sends time stats when getting a value from the cache', async () => {
-    const cache = createCache();
-    await cache.start();
-    await cache.set(bodySegment, cachedResponse, 600);
-    await getFromCache(cache, SEGMENT, ctx);
-    sinon.assert.calledWith(stats.timing, sinon.match('cache_read_time'), sinon.match.number);
   });
 
   it('returns an error', async () => {
@@ -150,6 +134,31 @@ describe('Cache', () => {
 });
 
 describe('events', () => {
+  it('emits a time stats event when storing a value in the cache', async () => {
+    let writeDuration;
+    events.on('cache.write_time', (duration) => {
+      writeDuration = duration;
+    });
+
+    const cache = createCache();
+    await cache.start();
+    await storeInCache(cache, SEGMENT, ctx, { a: 1 }, 600);
+
+    assert.isNumber(writeDuration);
+  });
+
+  it('emits a time stats when getting a value from the cache', async () => {
+    let readDuration;
+    events.on('cache.read_time', (duration) => {
+      readDuration = duration;
+    });
+    const cache = createCache();
+    await cache.start();
+    await cache.set(bodySegment, cachedResponse, 600);
+    await getFromCache(cache, SEGMENT, ctx);
+    assert.isNumber(readDuration);
+  });
+
   it('emits a timeout event with correct context', async () => {
     const cache = createCache();
     sandbox.stub(cache, 'get').callsFake(async () => {
