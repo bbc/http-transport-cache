@@ -83,8 +83,10 @@ describe('Stale-If-Error', () => {
       await requestWithCache(cache, {
         ignoreCacheErrors: false
       });
+      throw new Error('this should not pass');
     } catch (error) {
       assert.equal(error.message, expectedErrorMessage);
+      return;
     }
   });
 
