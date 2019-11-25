@@ -1,5 +1,6 @@
 'use strict';
 
+const stats = require('@ibl/stats');
 const assert = require('chai').assert;
 const Catbox = require('catbox');
 const Memory = require('catbox-memory');
@@ -40,6 +41,10 @@ const ctx = {
 };
 
 describe('Cache', () => {
+  beforeEach(() => {
+    sandbox.stub(stats, 'timing').returns();
+  });
+
   afterEach(() => {
     sandbox.restore();
   });
@@ -59,6 +64,21 @@ describe('Cache', () => {
     await storeInCache(cache, SEGMENT, ctx, { a: 1 }, 600);
     const cached = await getFromCache(cache, SEGMENT, ctx);
     assert.deepEqual(cached.item, { a: 1 });
+  });
+
+  it('sends time stats when storing a value in the cache', async () => {
+    const cache = createCache();
+    await cache.start();
+    await storeInCache(cache, SEGMENT, ctx, { a: 1 }, 600);
+    sinon.assert.calledWith(stats.timing, sinon.match('cache_write_time'), sinon.match.number);
+  });
+
+  it('sends time stats when getting a value from the cache', async () => {
+    const cache = createCache();
+    await cache.start();
+    await cache.set(bodySegment, cachedResponse, 600);
+    await getFromCache(cache, SEGMENT, ctx);
+    sinon.assert.calledWith(stats.timing, sinon.match('cache_read_time'), sinon.match.number);
   });
 
   it('returns an error', async () => {

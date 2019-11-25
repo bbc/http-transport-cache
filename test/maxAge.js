@@ -68,7 +68,7 @@ describe('Max-Age', () => {
     sandbox.assert.called(cache.start);
   });
 
-  it('throws the error that starting the cache throws', async () => {
+  it.only('throws the error that starting the cache throws', async () => {
     api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
     const cache = createCache();
     const startError = new Error('Error starting da cache');

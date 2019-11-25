@@ -32,6 +32,7 @@
     "sinon": "^7.2.3"
   },
   "dependencies": {
+    "@ibl/stats": "^5.0.0",
     "catbox": "^10.0.2",
     "catbox-memory": "^3.1.1",
     "lodash": "^4.17.4",
