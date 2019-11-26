@@ -1,6 +1,6 @@
 {
   "name": "@bbc/http-transport-cache",
-  "version": "3.5.1",
+  "version": "3.6.0",
   "description": "Caching middleware",
   "main": "index.js",
   "scripts": {
