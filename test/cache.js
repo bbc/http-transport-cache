@@ -40,6 +40,10 @@ const ctx = {
 };
 
 describe('Cache', () => {
+  beforeEach(() => {
+    sandbox.stub(events, 'on').returns();
+  });
+
   afterEach(() => {
     sandbox.restore();
   });
@@ -130,6 +134,31 @@ describe('Cache', () => {
 });
 
 describe('events', () => {
+  it('emits a time stats event when storing a value in the cache', async () => {
+    let writeDuration;
+    events.on('cache.write_time', (duration) => {
+      writeDuration = duration;
+    });
+
+    const cache = createCache();
+    await cache.start();
+    await storeInCache(cache, SEGMENT, ctx, { a: 1 }, 600);
+
+    assert.isNumber(writeDuration);
+  });
+
+  it('emits a time stats when getting a value from the cache', async () => {
+    let readDuration;
+    events.on('cache.read_time', (duration) => {
+      readDuration = duration;
+    });
+    const cache = createCache();
+    await cache.start();
+    await cache.set(bodySegment, cachedResponse, 600);
+    await getFromCache(cache, SEGMENT, ctx);
+    assert.isNumber(readDuration);
+  });
+
   it('emits a timeout event with correct context', async () => {
     const cache = createCache();
     sandbox.stub(cache, 'get').callsFake(async () => {
