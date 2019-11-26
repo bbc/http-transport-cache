@@ -111,12 +111,7 @@ describe('Stale-If-Error', () => {
         .get('http://www.example.com/')
         .asResponse();
     }
-
-    try {
-      await requestWithCacheAndNextMiddleware();
-    } catch (error) {
-      throw error;
-    }
+    await requestWithCacheAndNextMiddleware();
   });
 
   it('stores cached values for the stale-if-error value', async () => {
