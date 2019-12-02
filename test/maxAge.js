@@ -217,6 +217,42 @@ describe('Max-Age', () => {
     assert.equal(body, defaultResponse.body);
   });
 
+  it('does not store in cache if cache read fails when ignoring cache errors', async () => {
+    const catbox = createCache();
+    sandbox.stub(catbox, 'get').rejects(new Error('error2'));
+    sandbox.stub(catbox, 'set');
+
+    api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+    await httpTransport
+      .createClient()
+      .use(cache.maxAge(catbox, { ignoreCacheErrors: true }))
+      .get('http://www.example.com/')
+      .asBody();
+
+    sinon.assert.notCalled(catbox.set);
+  });
+
+  it('does not store in cache if cache read fails', async () => {
+    const catbox = createCache();
+    sandbox.stub(catbox, 'get').rejects(new Error('error2'));
+    sandbox.stub(catbox, 'set');
+
+    api.get('/').reply(200, defaultResponse.body, defaultHeaders);
+
+    try {
+      await httpTransport
+        .createClient()
+        .use(cache.maxAge(catbox))
+        .get('http://www.example.com/')
+        .asBody();
+    } catch (error) {
+      sinon.assert.notCalled(catbox.set);
+      return;
+    }
+    assert.fail('Expected to throw');
+  });
+
   it('timeouts a cache lookup', async () => {
     const catbox = createCache();
     const cacheLookupComplete = false;

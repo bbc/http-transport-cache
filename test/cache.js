@@ -122,15 +122,6 @@ describe('Cache', () => {
     assert.isFalse(cacheSetComplete);
     assert.equal(storeResult, body);
   });
-
-  it('returns a cache miss when "ignoreCacheErrors" is true', async () => {
-    const cache = createCache();
-    sandbox.stub(cache, 'get').rejects(new Error('cache lookup failed!'));
-    await cache.start();
-
-    const cached = await getFromCache(cache, SEGMENT, ctx, { ignoreCacheErrors: true });
-    assert.isNull(cached);
-  });
 });
 
 describe('events', () => {
@@ -312,7 +303,12 @@ describe('events', () => {
     });
 
     await cache.start();
-    await getFromCache(cache, SEGMENT, ctx, { ignoreCacheErrors: true });
-    assert.ok(cacheError);
+    try {
+      await getFromCache(cache, SEGMENT, ctx, { ignoreCacheErrors: true });
+    } catch (error) {
+      assert.ok(cacheError);
+      return;
+    }
+    assert.fail('should throw');
   });
 });

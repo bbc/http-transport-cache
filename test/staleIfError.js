@@ -338,6 +338,34 @@ describe('Stale-If-Error', () => {
     assert.fail('Expected to throw');
   });
 
+  it('does not write to cache if the cache lookup fails', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'set');
+    sandbox.stub(cache, 'get').rejects(new Error('cache lookup error'));
+
+    try {
+      await requestWithCache(cache);
+    } catch (err) {
+      sinon.assert.notCalled(cache.set);
+      return;
+    }
+    assert.fail('Expected to throw');
+  });
+
+  it('does not write to cache if the cache lookup fails when ignoring cache errors', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'set');
+    sandbox.stub(cache, 'get').rejects(new Error('cache lookup error'));
+
+    try {
+      await requestWithCache(cache, { ignoreCacheErrors: true });
+    } catch (err) {
+      sinon.assert.notCalled(cache.set);
+      return;
+    }
+    assert.fail('Expected to throw');
+  });
+
   it('returns the original error if "ignoreCacheErrors" is true', async () => {
     const cache = createCache();
     api.get('/').reply(500, defaultResponse, {});
