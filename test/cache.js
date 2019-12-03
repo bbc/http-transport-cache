@@ -79,15 +79,6 @@ describe('Cache', () => {
     assert.fail();
   });
 
-  it('returns the value when set throws', async () => {
-    const cache = createCache();
-    sandbox.stub(cache, 'set').rejects(new Error('Cache size limit reached'));
-
-    await cache.start();
-    const value = await storeInCache(cache, SEGMENT, ctx, { a: 1 }, 600);
-    assert.deepEqual(value, { a: 1 });
-  });
-
   it('times out a request', async () => {
     const cache = createCache();
     let cacheLookupComplete = false;
@@ -117,10 +108,9 @@ describe('Cache', () => {
     });
 
     const timeout = 10;
-    const storeResult = await storeInCache(cache, SEGMENT, ctx, body, 600, { timeout });
+    await storeInCache(cache, SEGMENT, ctx, body, 600, { timeout });
 
     assert.isFalse(cacheSetComplete);
-    assert.equal(storeResult, body);
   });
 });
 
