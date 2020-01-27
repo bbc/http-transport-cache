@@ -73,6 +73,21 @@ describe('Stale-If-Error', () => {
     sandbox.assert.called(cache.start);
   });
 
+  it('times out a request if cache does not start', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'start').callsFake(async () => {
+      await bluebird.delay(10000);
+    });
+
+    const timeout = 10;
+
+    try {
+      await requestWithCache(cache, { ignoreCacheErrors: false, timeout });
+    } catch (error) {
+      assert(error.message.includes('Starting cache timed out after'));
+    }
+  });
+
   it('throws the error that starting the cache throws', async () => {
     api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
     const cache = createCache();
