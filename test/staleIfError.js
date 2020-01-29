@@ -92,7 +92,7 @@ describe('Stale-If-Error', () => {
     }
   });
 
-  it('does not try to connect to the cache again after one failed attempt if useConnectionCircuitBreaker is true', async () => {
+  it('does not try to connect to the cache again after specified number of failed attempt if useConnectionCircuitBreaker is true', async () => {
     api.get('/').twice().reply(200, 'ok');
     const catboxCache = createCache();
     const connectionTimeout = 10;
@@ -100,7 +100,10 @@ describe('Stale-If-Error', () => {
     const opts = {
       ignoreCacheErrors: true,
       connectionTimeout,
-      useConnectionCircuitBreaker: true
+      connectionCircuitBreakerOptions: {
+        maxFailures: 1,
+        resetTimeout: 300000
+      }
     };
     const middleware = cache.staleIfError(catboxCache, opts);
 
@@ -115,7 +118,7 @@ describe('Stale-If-Error', () => {
     sandbox.assert.calledOnce(catboxCache.start);
   });
 
-  it('tries to connect to the cache again after 5 minutes following a failed attempt', async () => {
+  it('tries to connect to the cache again after specified time following a failed attempt', async () => {
     api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
     const clock = sandbox.useFakeTimers();
     api.get('/').twice().reply(200, 'ok');
@@ -125,7 +128,10 @@ describe('Stale-If-Error', () => {
     const opts = {
       ignoreCacheErrors: true,
       connectionTimeout,
-      useConnectionCircuitBreaker: true
+      connectionCircuitBreakerOptions: {
+        maxFailures: 1,
+        resetTimeout: 300000
+      }
     };
     const middleware = cache.staleIfError(catboxCache, opts);
 

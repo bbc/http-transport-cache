@@ -76,9 +76,10 @@ Both `maxage` and `staleIfError` accept an options object.
 
 |Property|type|module|Description|
 |----|----|----|-----------|
-|`ignoreCacheErrors`|boolean|maxage,staleIfError| `cache.maxAge` will return a cache miss when this property is `true`. Setting this property true for `cache.staleIfError` will rethrow the original error (not the cache lookup error). `ignoreCacheErrors` is `false` by default.|
-|`timeout`|integer|maxage|Timeouts a cache lookup after a specified number of ms. By default, no timeout is specified.|
-|`connectionTimeout`|integer|maxage,staleIfError|Timeouts the attempt to connect to a cache after a specified number of ms. By default, no timeout is specified.|
+|`ignoreCacheErrors`|boolean|maxAge,staleIfError| `cache.maxAge` will return a cache miss when this property is `true`. Setting this property true for `cache.staleIfError` will rethrow the original error (not the cache lookup error). `ignoreCacheErrors` is `false` by default.|
+|`timeout`|integer|maxAge|Timeouts a cache lookup after a specified number of ms. By default, no timeout is specified.|
+|`connectionTimeout`|integer|maxAge,staleIfError|Timeouts the attempt to connect to a cache after a specified number of ms. By default, no timeout is specified.|
+|`connectionCircuitBreakerOptions`|object|maxAge,staleIfError| When present an instance of [Levee](https://github.com/krakenjs/levee) will be created with these configuration options to use on connection to cache.|
 
 ## Cache Key Structure
  
