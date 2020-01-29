@@ -39,15 +39,20 @@ function createCache() {
   return new Catbox.Client(new Memory());
 }
 
-function createCacheClient(catbox, opts) {
+function createCacheClient(catbox, opts, existingCacheMiddleware) {
+  const cacheMiddlware = existingCacheMiddleware || cache.maxAge(catbox, opts);
   return httpTransport.createClient()
-    .use(cache.maxAge(catbox, opts));
+    .use(cacheMiddlware);
 }
 
-async function requestWithCache(catbox, opts) {
-  return createCacheClient(catbox, opts)
+function requestWithClient(client) {
+  return client
     .get('http://www.example.com/')
     .asResponse();
+}
+
+async function requestWithCache(catbox, opts, cacheMiddlware) {
+  return requestWithClient(createCacheClient(catbox, opts, cacheMiddlware));
 }
 
 describe('Max-Age', () => {
@@ -95,6 +100,58 @@ describe('Max-Age', () => {
     } catch (error) {
       assert(error.message.includes('Starting cache timed out after'));
     }
+  });
+
+  it('does not try to connect to the cache again after one failed attempt if useConnectionCircuitBreaker is true', async () => {
+    api.get('/').twice().reply(200, 'ok');
+    const catboxCache = createCache();
+    const connectionTimeout = 10;
+
+    const opts = {
+      ignoreCacheErrors: true,
+      connectionTimeout,
+      useConnectionCircuitBreaker: true
+    };
+    const middleware = cache.maxAge(catboxCache, opts);
+
+    sandbox.stub(catboxCache, 'start').callsFake(async () => {
+      throw new Error('fake error');
+    });
+    sandbox.stub(catboxCache, 'isReady').returns(false);
+
+    await requestWithCache(catboxCache, opts, middleware);
+    sandbox.assert.calledOnce(catboxCache.start);
+    await requestWithCache(catboxCache, opts, middleware);
+    sandbox.assert.calledOnce(catboxCache.start);
+  });
+
+  it('tries to connect to the cache again after 5 minutes following a failed attempt', async () => {
+    api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
+    const clock = sandbox.useFakeTimers();
+    api.get('/').twice().reply(200, 'ok');
+    const catboxCache = createCache();
+    const connectionTimeout = 10;
+
+    const opts = {
+      ignoreCacheErrors: true,
+      connectionTimeout,
+      useConnectionCircuitBreaker: true
+    };
+    const middleware = cache.maxAge(catboxCache, opts);
+
+    sandbox.stub(catboxCache, 'start').callsFake(async () => {
+      throw new Error('fake error');
+    });
+    sandbox.stub(catboxCache, 'isReady').returns(false);
+
+    await requestWithCache(catboxCache, opts, middleware);
+    sandbox.assert.calledOnce(catboxCache.start);
+    await requestWithCache(catboxCache, opts, middleware);
+    sandbox.assert.calledOnce(catboxCache.start);
+    clock.tick(300000);
+    await requestWithCache(catboxCache, opts, middleware);
+    sandbox.assert.calledTwice(catboxCache.start);
+    clock.restore();
   });
 
   it('does not throw the error that starting the cache throws and continues to next middleware when ignoreCacheErrors is true', async () => {
