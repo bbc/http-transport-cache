@@ -77,7 +77,6 @@ Both `maxage` and `staleIfError` accept an options object.
 |Property|type|module|Description|
 |----|----|----|-----------|
 |`ignoreCacheErrors`|boolean|maxage,staleIfError| `cache.maxAge` will return a cache miss when this property is `true`. Setting this property true for `cache.staleIfError` will rethrow the original error (not the cache lookup error). `ignoreCacheErrors` is `false` by default.|
-|`onCacheConnectionError`|function|maxage,staleIfError|Function to be called when there is a cache connection error. Called with the error object as the only argument.|
 |`timeout`|integer|maxage|Timeouts a cache lookup after a specified number of ms. By default, no timeout is specified.|
 |`connectionTimeout`|integer|maxage,staleIfError|Timeouts the attempt to connect to a cache after a specified number of ms. By default, no timeout is specified.|
 
