@@ -97,20 +97,6 @@ describe('Max-Age', () => {
     }
   });
 
-  it('calls onCacheConnectionError with error if cache does not start', (done) => {
-    function onCacheConnectionError (error) {
-      assert(error.message.includes('Starting cache timed out after'));
-      done();
-    }
-    const cache = createCache();
-    sandbox.stub(cache, 'start').callsFake(async () => {
-      await bluebird.delay(10000);
-    });
-
-    const connectionTimeout = 10;
-    requestWithCache(cache, { ignoreCacheErrors: false, connectionTimeout, onCacheConnectionError });
-  });
-
   it('does not throw the error that starting the cache throws and continues to next middleware when ignoreCacheErrors is true', async () => {
     const catbox = createCache();
     const startError = new Error('Error starting da cache');

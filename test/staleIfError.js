@@ -88,20 +88,6 @@ describe('Stale-If-Error', () => {
     }
   });
 
-  it('calls onCacheConnectionError with error if cache does not start', (done) => {
-    function onCacheConnectionError (error) {
-      assert(error.message.includes('Starting cache timed out after'));
-      done();
-    }
-    const cache = createCache();
-    sandbox.stub(cache, 'start').callsFake(async () => {
-      await bluebird.delay(10000);
-    });
-
-    const connectionTimeout = 10;
-    requestWithCache(cache, { ignoreCacheErrors: false, connectionTimeout, onCacheConnectionError });
-  });
-
   it('throws the error that starting the cache throws', async () => {
     api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
     const cache = createCache();
