@@ -79,7 +79,8 @@ describe('Stale-If-Error', () => {
   it('times out a request if cache does not start', async () => {
     const cache = createCache();
     sandbox.stub(cache, 'start').callsFake(async () => {
-      await bluebird.delay(10000);
+      await bluebird.delay(100);
+      throw new Error('We should never get this error');
     });
 
     const connectionTimeout = 10;
@@ -91,7 +92,7 @@ describe('Stale-If-Error', () => {
     }
   });
 
-  it('does not try to connect to the cache again after specified number of failed attempt if useConnectionCircuitBreaker is true', async () => {
+  it('does not try to connect to the cache again after specified number of failed attempts if useConnectionCircuitBreaker is true', async () => {
     api.get('/').twice().reply(200, 'ok');
     const catboxCache = createCache();
     const connectionTimeout = 10;
@@ -118,7 +119,7 @@ describe('Stale-If-Error', () => {
   });
 
   it('tries to connect to the cache again after specified time following a failed attempt', async () => {
-    api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
+    api.get('/').thrice().reply(200, 'ok');
     const clock = sandbox.useFakeTimers();
     const catboxCache = createCache();
     const connectionTimeout = 10;
