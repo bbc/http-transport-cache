@@ -642,11 +642,11 @@ describe('Max-Age', () => {
       assert.ok(cacheHit);
     });
 
-    it('emits a connection_error event when cache.start fails', async () => {
+    it('emits a connection_error event with error when cache.start fails', async () => {
       api.get('/').reply(200, 'ok');
-      let cacheConnectionError = false;
-      events.on('cache.connection_error', () => {
-        cacheConnectionError = true;
+      let cacheConnectionError = null;
+      events.on('cache.connection_error', (ctx, err) => {
+        cacheConnectionError = err;
       });
       const catboxCache = createCache();
       const connectionTimeout = 10;
@@ -663,7 +663,9 @@ describe('Max-Age', () => {
       sandbox.stub(catboxCache, 'isReady').returns(false);
 
       await requestWithCache(catboxCache, opts, middleware);
-      assert.ok(cacheConnectionError);
+
+      assert(cacheConnectionError instanceof Error, 'expected error to have been emitted');
+      assert.strictEqual(cacheConnectionError.message, 'fake error');
     });
 
     it('returns a context from a cache hit event emission', async () => {
