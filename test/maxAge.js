@@ -131,7 +131,6 @@ describe('Max-Age', () => {
   it('tries to connect to the cache again after specified time following a failed attempt', async () => {
     api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
     const clock = sandbox.useFakeTimers();
-    api.get('/').twice().reply(200, 'ok');
     const catboxCache = createCache();
     const connectionTimeout = 10;
 
