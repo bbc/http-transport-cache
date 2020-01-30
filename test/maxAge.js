@@ -102,7 +102,7 @@ describe('Max-Age', () => {
     }
   });
 
-  it('does not try to connect to the cache again after specified number of failed attempt if useConnectionCircuitBreaker is true', async () => {
+  it('does not try to connect to the cache again after specified number of failed attempt if connectionCircuitBreakerOptions are passed in', async () => {
     api.get('/').twice().reply(200, 'ok');
     const catboxCache = createCache();
     const connectionTimeout = 10;
