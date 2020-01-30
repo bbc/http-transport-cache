@@ -34,6 +34,7 @@
   "dependencies": {
     "catbox": "^10.0.2",
     "catbox-memory": "^3.1.1",
+    "levee": "^1.5.0",
     "lodash": "^4.17.4",
     "wreck": "^12.2.0"
   },
