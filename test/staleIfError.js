@@ -49,7 +49,6 @@ function createCacheClient(catbox, opts, existingCacheMiddleware) {
 }
 
 function requestWithClient(client) {
-  console.log('do request');
   return client
     .get('http://www.example.com/')
     .use(toError())
@@ -485,6 +484,30 @@ describe('Stale-If-Error', () => {
       url: 'http://www.example.com/',
       statusCode: 200
     };
+
+    it('emits a connection_error event when cache.start fails', async () => {
+      api.get('/').reply(200, 'ok');
+      let cacheConnectionError = false;
+      events.on('cache.connection_error', () => {
+        cacheConnectionError = true;
+      });
+      const catboxCache = createCache();
+      const connectionTimeout = 10;
+
+      const opts = {
+        ignoreCacheErrors: true,
+        connectionTimeout
+      };
+      const middleware = cache.staleIfError(catboxCache, opts);
+
+      sandbox.stub(catboxCache, 'start').callsFake(async () => {
+        throw new Error('fake error');
+      });
+      sandbox.stub(catboxCache, 'isReady').returns(false);
+
+      await requestWithCache(catboxCache, opts, middleware);
+      assert.ok(cacheConnectionError);
+    });
 
     it('emits a stale cache event when returning stale', async () => {
       let cacheStale = false;

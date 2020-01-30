@@ -642,6 +642,30 @@ describe('Max-Age', () => {
       assert.ok(cacheHit);
     });
 
+    it('emits a connection_error event when cache.start fails', async () => {
+      api.get('/').reply(200, 'ok');
+      let cacheConnectionError = false;
+      events.on('cache.connection_error', () => {
+        cacheConnectionError = true;
+      });
+      const catboxCache = createCache();
+      const connectionTimeout = 10;
+
+      const opts = {
+        ignoreCacheErrors: true,
+        connectionTimeout
+      };
+      const middleware = cache.maxAge(catboxCache, opts);
+
+      sandbox.stub(catboxCache, 'start').callsFake(async () => {
+        throw new Error('fake error');
+      });
+      sandbox.stub(catboxCache, 'isReady').returns(false);
+
+      await requestWithCache(catboxCache, opts, middleware);
+      assert.ok(cacheConnectionError);
+    });
+
     it('returns a context from a cache hit event emission', async () => {
       const cache = createCache();
       api.get('/').reply(200, defaultResponse, defaultHeaders);
