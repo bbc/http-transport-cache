@@ -87,7 +87,7 @@ describe('Stale-If-Error', () => {
     try {
       await requestWithCache(cache, { ignoreCacheErrors: false, connectionTimeout });
     } catch (error) {
-      assert(error.message.includes('Starting cache timed out after'));
+      assert.equal(error.message, 'Starting cache timed out after 10');
     }
   });
 
