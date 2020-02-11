@@ -166,6 +166,26 @@ describe('events', () => {
     assert.fail();
   });
 
+  it('emits a timeout event with correct error object', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'get').callsFake(async () => {
+      await bluebird.delay(100);
+    });
+
+    let emmitedError;
+    events.on('cache.timeout', (ctx, err) => {
+      emmitedError = err;
+    });
+
+    await cache.start();
+    try {
+      await getFromCache(cache, SEGMENT, ctx, { timeout: 50 });
+    } catch (err) {
+      return assert.deepStrictEqual(emmitedError, err);
+    }
+    assert.fail();
+  });
+
   it('emits a timeout event when set timeout occurs', async () => {
     const cache = createCache();
     const body = { a: 1 };
@@ -185,6 +205,25 @@ describe('events', () => {
     assert.deepStrictEqual(eventContext, ctx);
   });
 
+  it('emits a timeout event with the correct error object when set timeout occurs', async () => {
+    const cache = createCache();
+    const body = { a: 1 };
+
+    sandbox.stub(cache, 'set').callsFake(async () => {
+      await bluebird.delay(100);
+    });
+
+    let emmitedError;
+    events.on('cache.timeout', (ctx, err) => {
+      emmitedError = err;
+    });
+
+    await cache.start();
+    await storeInCache(cache, SEGMENT, ctx, body, 600, { timeout: 10 });
+
+    assert.deepEqual(emmitedError.message, 'Cache timed out after 10');
+  });
+
   it('emits a cache error event with correct context', async () => {
     const cache = createCache();
     sandbox.stub(cache, 'get').rejects(new Error('error'));
@@ -199,6 +238,25 @@ describe('events', () => {
       await getFromCache(cache, SEGMENT, ctx, { timeout: 50 });
     } catch (err) {
       return assert.deepStrictEqual(eventContext, ctx);
+    }
+    assert.fail();
+  });
+
+  it('emits a cache error event with correct error object', async () => {
+    const cache = createCache();
+    const errorObject = new Error('error');
+    sandbox.stub(cache, 'get').rejects(errorObject);
+
+    let errorEmitted;
+    events.on('cache.error', (ctx, err) => {
+      errorEmitted = err;
+    });
+
+    await cache.start();
+    try {
+      await getFromCache(cache, SEGMENT, ctx, { timeout: 50 });
+    } catch (err) {
+      return assert.deepStrictEqual(errorEmitted, errorObject);
     }
     assert.fail();
   });
@@ -281,6 +339,21 @@ describe('events', () => {
     await cache.start();
     await storeInCache(cache, SEGMENT, ctx, { a: 1 }, 600);
     assert.ok(cacheError);
+  });
+
+  it('emits a cache error event with correct error object', async () => {
+    const cache = createCache();
+    const errorObject = new Error('error');
+    sandbox.stub(cache, 'set').rejects(errorObject);
+
+    let errorEmitted;
+    events.on('cache.error', (ctx, err) => {
+      errorEmitted = err;
+    });
+
+    await cache.start();
+    await storeInCache(cache, SEGMENT, ctx, { a: 1 }, 600);
+    assert.deepStrictEqual(errorEmitted, errorObject);
   });
 
   it('emits a cache error event when "ignoreCacheErrors" is true', async () => {
