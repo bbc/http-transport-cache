@@ -683,6 +683,23 @@ describe('Max-Age', () => {
       assert.instanceOf(context, httpTransport.context);
     });
 
+    it('sets the cacheStatus variable in context from a cache hit', async () => {
+      const cache = createCache();
+      api.get('/').reply(200, defaultResponse, defaultHeaders);
+
+      let context;
+      events.on('cache.hit', (ctx) => {
+        context = ctx;
+      });
+
+      const includeCacheStatusInCtx = true;
+      await requestWithCache(cache, { includeCacheStatusInCtx });
+      await requestWithCache(cache, { includeCacheStatusInCtx });
+
+      assert.instanceOf(context, httpTransport.context);
+      assert.equal(context.cacheStatus, 'hit');
+    });
+
     it('returns a context from a cache miss event emission', async () => {
       const cache = createCache();
       api.get('/').reply(200, defaultResponse, defaultHeaders);
@@ -695,6 +712,22 @@ describe('Max-Age', () => {
       await requestWithCache(cache);
 
       assert.instanceOf(context, httpTransport.context);
+    });
+
+    it('sets the cacheStatus variable in context from a cache miss', async () => {
+      const cache = createCache();
+      api.get('/').reply(200, defaultResponse, defaultHeaders);
+
+      let context;
+      events.on('cache.miss', (ctx) => {
+        context = ctx;
+      });
+
+      const includeCacheStatusInCtx = true;
+      await requestWithCache(cache, { includeCacheStatusInCtx });
+
+      assert.instanceOf(context, httpTransport.context);
+      assert.equal(context.cacheStatus, 'miss');
     });
 
     it('returns a context from a cache timeout event emission', async () => {

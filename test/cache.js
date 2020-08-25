@@ -166,6 +166,28 @@ describe('events', () => {
     assert.fail();
   });
 
+  it('sets the cacheStatus variable in context from a cache timeout', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'get').callsFake(async () => {
+      await bluebird.delay(100);
+    });
+
+    let eventContext;
+    events.on('cache.timeout', (ctx) => {
+      eventContext = ctx;
+    });
+
+    const includeCacheStatusInCtx = true;
+    await cache.start();
+    try {
+      await getFromCache(cache, SEGMENT, ctx, { timeout: 50, includeCacheStatusInCtx });
+    } catch (err) {
+      assert.equal(ctx.cacheStatus, 'timeout');
+      return assert.deepStrictEqual(eventContext, ctx);
+    }
+    assert.fail();
+  });
+
   it('emits a timeout event with correct error object', async () => {
     const cache = createCache();
     sandbox.stub(cache, 'get').callsFake(async () => {
@@ -205,6 +227,26 @@ describe('events', () => {
     assert.deepStrictEqual(eventContext, ctx);
   });
 
+  it('sets the cacheStatus variable in context when storing in cache times out', async () => {
+    const cache = createCache();
+    const body = { a: 1 };
+
+    sandbox.stub(cache, 'set').callsFake(async () => {
+      await bluebird.delay(100);
+    });
+
+    let eventContext;
+    events.on('cache.timeout', (ctx) => {
+      eventContext = ctx;
+    });
+    const includeCacheStatusInCtx = true;
+    await cache.start();
+    await storeInCache(cache, SEGMENT, ctx, body, 600, { timeout: 10, includeCacheStatusInCtx });
+
+    assert.equal(ctx.cacheStatus, 'timeout');
+    assert.deepStrictEqual(eventContext, ctx);
+  });
+
   it('emits a timeout event with the correct error object when set timeout occurs', async () => {
     const cache = createCache();
     const body = { a: 1 };
@@ -237,6 +279,26 @@ describe('events', () => {
     try {
       await getFromCache(cache, SEGMENT, ctx, { timeout: 50 });
     } catch (err) {
+      return assert.deepStrictEqual(eventContext, ctx);
+    }
+    assert.fail();
+  });
+
+  it('sets the cacheStatus variable in context from a cache timeout', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'get').rejects(new Error('error'));
+
+    let eventContext;
+    events.on('cache.error', (ctx) => {
+      eventContext = ctx;
+    });
+
+    const includeCacheStatusInCtx = true;
+    await cache.start();
+    try {
+      await getFromCache(cache, SEGMENT, ctx, { timeout: 50, includeCacheStatusInCtx });
+    } catch (err) {
+      assert.equal(ctx.cacheStatus, 'error');
       return assert.deepStrictEqual(eventContext, ctx);
     }
     assert.fail();
@@ -338,6 +400,22 @@ describe('events', () => {
 
     await cache.start();
     await storeInCache(cache, SEGMENT, ctx, { a: 1 }, 600);
+    assert.ok(cacheError);
+  });
+
+  it('sets the cacheStatus variable in context when storing in cache errors', async () => {
+    const cache = createCache();
+    sandbox.stub(cache, 'set').rejects(new Error('error'));
+
+    let cacheError = false;
+    events.on('cache.error', () => {
+      cacheError = true;
+    });
+
+    const includeCacheStatusInCtx = true;
+    await cache.start();
+    await storeInCache(cache, SEGMENT, ctx, { a: 1, includeCacheStatusInCtx }, 600);
+    assert.equal(ctx.cacheStatus, 'error');
     assert.ok(cacheError);
   });
 
