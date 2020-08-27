@@ -166,7 +166,7 @@ describe('events', () => {
     assert.fail();
   });
 
-  it('sets the cacheStatus variable in context from a cache timeout', async () => {
+  it('sets the cacheStatus variable in context when retrieving from the cache times out', async () => {
     const cache = createCache();
     sandbox.stub(cache, 'get').callsFake(async () => {
       await bluebird.delay(100);
@@ -284,7 +284,7 @@ describe('events', () => {
     assert.fail();
   });
 
-  it('sets the cacheStatus variable in context from a cache timeout', async () => {
+  it('sets the cacheStatus variable in context when retrieving from the cache errors', async () => {
     const cache = createCache();
     sandbox.stub(cache, 'get').rejects(new Error('error'));
 
