@@ -569,6 +569,29 @@ describe('Stale-If-Error', () => {
       assert.instanceOf(context, httpTransport.context);
     });
 
+    it('sets the cacheStatus variable in context when there is a stale cache', async () => {
+      const opts = {
+        name: 'ceych',
+        includeCacheStatusInCtx: true
+      };
+
+      let context;
+      events.on('cache.ceych.stale', (ctx) => {
+        context = ctx;
+      });
+
+      const cache = createCache();
+
+      api.get('/').reply(500, defaultResponse.body, {});
+
+      await cache.start();
+      await cache.set(bodySegment, cachedResponse, 7200);
+      await requestWithCache(cache, opts);
+
+      assert.instanceOf(context, httpTransport.context);
+      assert.equal(context.cacheStatus, 'stale');
+    });
+
     it('emits a timeout cache event with the correct context', async () => {
       const cache = createCache();
       api.get('/').reply(500, defaultResponse, defaultHeaders);
