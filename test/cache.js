@@ -177,6 +177,7 @@ describe('events', () => {
       eventContext = ctx;
     });
 
+    delete ctx.cacheStatus;
     const includeCacheStatusInCtx = true;
     await cache.start();
     try {
@@ -239,6 +240,8 @@ describe('events', () => {
     events.on('cache.timeout', (ctx) => {
       eventContext = ctx;
     });
+
+    delete ctx.cacheStatus;
     const includeCacheStatusInCtx = true;
     await cache.start();
     await storeInCache(cache, SEGMENT, ctx, body, 600, { timeout: 10, includeCacheStatusInCtx });
@@ -293,6 +296,7 @@ describe('events', () => {
       eventContext = ctx;
     });
 
+    delete ctx.cacheStatus;
     const includeCacheStatusInCtx = true;
     await cache.start();
     try {
@@ -405,6 +409,7 @@ describe('events', () => {
 
   it('sets the cacheStatus variable in context when storing in cache errors', async () => {
     const cache = createCache();
+    const body = { a: 1 };
     sandbox.stub(cache, 'set').rejects(new Error('error'));
 
     let cacheError = false;
@@ -412,9 +417,11 @@ describe('events', () => {
       cacheError = true;
     });
 
+    delete ctx.cacheStatus;
     const includeCacheStatusInCtx = true;
     await cache.start();
-    await storeInCache(cache, SEGMENT, ctx, { a: 1, includeCacheStatusInCtx }, 600);
+    await storeInCache(cache, SEGMENT, ctx, body, 600, { includeCacheStatusInCtx });
+
     assert.equal(ctx.cacheStatus, 'error');
     assert.ok(cacheError);
   });
