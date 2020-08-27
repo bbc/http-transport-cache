@@ -683,7 +683,7 @@ describe('Max-Age', () => {
       assert.instanceOf(context, httpTransport.context);
     });
 
-    it('sets the cacheStatus variable in context from a cache hit', async () => {
+    it('sets the cacheStatus variable in context when there is a cache hit', async () => {
       const cache = createCache();
       api.get('/').reply(200, defaultResponse, defaultHeaders);
 
@@ -714,7 +714,7 @@ describe('Max-Age', () => {
       assert.instanceOf(context, httpTransport.context);
     });
 
-    it('sets the cacheStatus variable in context from a cache miss', async () => {
+    it('sets the cacheStatus variable in context when there is a cache miss', async () => {
       const cache = createCache();
       api.get('/').reply(200, defaultResponse, defaultHeaders);
 
