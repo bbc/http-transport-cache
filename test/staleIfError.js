@@ -172,8 +172,6 @@ describe('Stale-If-Error', () => {
     sandbox.stub(catbox, 'start').rejects(startError);
     api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
 
-    // eslint-disable-next-line no-unused-vars
-    let called = false;
     function requestWithCacheAndNextMiddleware() {
       return httpTransport
         .createClient()
@@ -181,7 +179,6 @@ describe('Stale-If-Error', () => {
           ignoreCacheErrors: true
         }))
         .use((ctx, next) => {
-          called = true;
           return next();
         })
         .get('http://www.example.com/')
@@ -223,7 +220,7 @@ describe('Stale-If-Error', () => {
       url: 'http://www.example.com/',
       statusCode: 200,
       elapsedTime: 40,
-      headers: headers
+      headers
     };
 
     api.get('/').reply(200, response.body, headers);
@@ -675,7 +672,7 @@ describe('Stale-If-Error', () => {
       const headers = {
         'cache-control': 'max-age=60,stale-if-error=7200',
         'accept-language': 'en',
-        'accept': 'application/json'
+        accept: 'application/json'
       };
       const cache = createCache();
       api.get('/some-cacheable-path').reply(200, defaultResponse.body, headers);
@@ -712,7 +709,7 @@ describe('Stale-If-Error', () => {
       const headers = {
         'cache-control': 'max-age=60,stale-if-error=7200',
         'accept-language': 'en',
-        'accept': 'application/json'
+        accept: 'application/json'
       };
       const cache = createCache();
       api.get('/some-cacheable-path').reply(200, defaultResponse.body, headers);

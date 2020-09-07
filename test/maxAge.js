@@ -451,7 +451,7 @@ describe('Max-Age', () => {
       const headers = {
         'cache-control': 'max-age=60',
         'accept-language': 'en',
-        'accept': 'application/json'
+        accept: 'application/json'
       };
       const cache = createCache();
       api.get('/some-cacheable-path').reply(200, defaultResponse.body, headers);
@@ -486,7 +486,7 @@ describe('Max-Age', () => {
       const headers = {
         'cache-control': 'max-age=60',
         'accept-language': 'en',
-        'accept': 'application/json'
+        accept: 'application/json'
       };
       const cache = createCache();
       api.get('/some-cacheable-path').reply(200, defaultResponse.body, headers);
