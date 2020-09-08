@@ -60,6 +60,30 @@ const client = HttpTransport.createClient()
       console.log(body);
 ```
 
+Listening to Events:
+`````` JS
+const { events, maxAge } = require('@bbc/http-transport-cache');
+
+const stats = require('@ibl/stats');
+const Catbox = require('catbox');
+const HttpTransport = require('@bbc/http-transport');
+
+const catbox = new Catbox.Client(new Memory());
+
+const url = 'http://example.com/';
+
+const client = HttpTransport.createBuilder()
+  .use(cache.maxAge(catbox, {
+    name: `theservice`,
+  }))
+  .createClient();
+
+events.on(`cache.theservice.read_time`, (ctx) => {
+  stats.timing(`timingstat.read_time`, ctx.duration);
+});
+```
+
+
 ## Features
 
 |Feature|Description|
@@ -69,6 +93,17 @@ const client = HttpTransport.createClient()
 |Stale If Error|In order to ensure a resilient service even during errors, http responses can include a `cache-control` directive called `stale-if-error` which means we can use a cached response for that period whilst the service is erroring. To do this a separate response blob is stored for the stale period and on error this response is used alongside the body which is stored for the higher of either `max-age` or `stale-if-error`.|
 |No Store|If `no-store` directive is present in the response, it will not be stored / cached anywhere.|
 |Private|If `private` directive is present in the response, it will not be stored by shared cache. The response will only be stored in a private cache intended for a single user.|
+
+
+### Events
+- hit
+- miss
+- error 
+- timeout 
+- stale
+- read_time
+- write_time
+- connection_error
 
 ## Middleware Options
 
