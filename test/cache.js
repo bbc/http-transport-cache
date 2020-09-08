@@ -120,8 +120,8 @@ describe('events', () => {
     const opts = {
       name: 'whatever'
     };
-    events.on(`cache.${opts.name}.write_time`, (duration) => {
-      writeDuration = duration;
+    events.on(`cache.${opts.name}.write_time`, (ctx) => {
+      writeDuration = ctx.cacheDuration;
     });
 
     const cache = createCache();
@@ -136,8 +136,8 @@ describe('events', () => {
     const opts = {
       name: 'whatever'
     };
-    events.on(`cache.${opts.name}.read_time`, (duration) => {
-      readDuration = duration;
+    events.on(`cache.${opts.name}.read_time`, (ctx) => {
+      readDuration = ctx.cacheDuration;
     });
     const cache = createCache();
     await cache.start();
