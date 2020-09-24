@@ -61,7 +61,7 @@ const client = HttpTransport.createClient()
 ```
 
 Listening to Events:
-`````` JS
+``` JS
 const { events, maxAge } = require('@bbc/http-transport-cache');
 
 const stats = require('@ibl/stats');
