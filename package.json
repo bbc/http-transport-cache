@@ -40,6 +40,7 @@
     "sinon": "^9.0.3"
   },
   "dependencies": {
+    "bluebird": "^3.7.2",
     "catbox": "^10.0.2",
     "catbox-memory": "^3.1.1",
     "levee": "^1.5.0",
