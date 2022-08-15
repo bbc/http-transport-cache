@@ -92,7 +92,7 @@ describe('Cache', () => {
       await getFromCache(cache, SEGMENT, ctx, { timeout });
     } catch (err) {
       assert.isFalse(cacheLookupComplete);
-      return assert.equal(err.message, `Cache timed out after ${timeout}`);
+      return assert.equal(err.message, `Cache get timed out after ${timeout}ms - url: http://www.example.com/ - segment: body`);
     }
     assert.fail();
   });
@@ -288,7 +288,7 @@ describe('events', () => {
     await cache.start();
     await storeInCache(cache, SEGMENT, ctx, body, 600, { timeout: 10 });
 
-    assert.deepEqual(emmitedError.message, 'Cache timed out after 10');
+    assert.deepEqual(emmitedError.message, 'Cache set timed out after 10ms - url: http://www.example.com/ - segment: body');
   });
 
   it('emits a cache error event with correct context', async () => {

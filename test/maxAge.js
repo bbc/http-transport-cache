@@ -349,7 +349,7 @@ describe('Max-Age', () => {
         .asBody();
     } catch (err) {
       assert.isFalse(cacheLookupComplete);
-      return assert.equal(err.message, `Cache timed out after ${timeout}`);
+      return assert.equal(err.message, `Cache get timed out after ${timeout}ms - url: http://www.example.com/ - segment: body`);
     }
     assert.fail('Expected to throw');
   });
