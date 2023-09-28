@@ -28,12 +28,12 @@
   ],
   "license": "Apache-2.0",
   "devDependencies": {
-    "@bbc/http-transport": "^3.4.2",
+    "@bbc/http-transport": "^4.3.0",
     "@bbc/http-transport-to-error": "^2.0.0",
     "chai": "^4.1.2",
     "eslint": "^7.8.1",
     "eslint-config-iplayer": "^7.0.0",
-    "eslint-plugin-mocha": "^4.11.0",
+    "eslint-plugin-mocha": "^10.2.0",
     "mocha": "^8.1.3",
     "nock": "^13.0.4",
     "nyc": "^15.1.0",
@@ -48,7 +48,7 @@
     "wreck": "^12.2.0"
   },
   "peerDependencies": {
-    "@bbc/http-transport": "3.x"
+    "@bbc/http-transport": "^4.3.0"
   },
   "eslintConfig": {
     "extends": "iplayer"
