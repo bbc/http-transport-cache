@@ -206,6 +206,24 @@ describe('Stale-If-Error', () => {
     assert(differenceInExpires < 1000 && differenceInExpires >= 0);
   });
 
+  it('stores cached values for the default TTL value if no "stale-if-error" specified', async () => {
+    const cache = createCache();
+    await cache.start();
+
+    api.get('/').reply(200, defaultResponse.body, {});
+
+    const maxAge = 90000;
+    const expiry = Date.now() + maxAge;
+
+    await requestWithCache(cache, { defaultTTL: 90 });
+    const cached = await cache.get(bodySegment);
+    const actualExpiry = cached.ttl + cached.stored;
+    const differenceInExpires = actualExpiry - expiry;
+
+    assert.deepEqual(cached.item.body, defaultResponse.body);
+    assert(differenceInExpires < 1000 && differenceInExpires >= 0);
+  });
+
   it('only caches for "stale-if-error" when no other directives are specified', async () => {
     const catbox = new Catbox.Client(new Memory());
     sandbox.stub(catbox, 'get').resolves();
