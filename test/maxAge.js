@@ -202,6 +202,21 @@ describe('Max-Age', () => {
     assert(differenceInExpires < 1000);
   });
 
+  it('stores cached values for the defaultTTL value if provided and there is no "max-age"', async () => {
+    const cache = createCache();
+    api.get('/').reply(200, defaultResponse.body, {});
+
+    const expiry = Date.now() + 90000;
+
+    await requestWithCache(cache, { defaultTTL: 90 });
+    const cached = await cache.get(bodySegment);
+    const actualExpiry = cached.ttl + cached.stored;
+    const differenceInExpires = actualExpiry - expiry;
+
+    assert.deepEqual(cached.item.body, defaultResponse.body);
+    assert(differenceInExpires < 1000);
+  });
+
   it('only caches for "max-age" when no other directives are specified', async () => {
     const catbox = new Catbox.Client(new Memory());
     sandbox.stub(catbox, 'get').resolves();
