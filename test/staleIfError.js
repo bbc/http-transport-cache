@@ -1,8 +1,8 @@
 'use strict';
 
 const assert = require('chai').assert;
-const Catbox = require('catbox');
-const Memory = require('catbox-memory');
+const Catbox = require('@hapi/catbox');
+const Memory = require('@hapi/catbox-memory').Engine;
 const nock = require('nock');
 const bluebird = require('bluebird');
 

@@ -21,7 +21,7 @@ Configure response caching based on max-age:
 
 ```js
 const cache = require('@bbc/http-transport-cache');
-const Catbox = require('catbox');
+const Catbox = require('@hapi/catbox');
 const HttpTransport = require('@bbc/http-transport');
 
 const catbox = new Catbox.Client(new Memory());

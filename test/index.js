@@ -3,8 +3,8 @@
 const assert = require('assert');
 const nock = require('nock');
 const httpTransport = require('@bbc/http-transport');
-const Catbox = require('catbox');
-const Memory = require('catbox-memory');
+const Catbox = require('@hapi/catbox');
+const Memory = require('@hapi/catbox-memory').Engine;
 const bluebird = require('bluebird');
 
 const VERSION = require('../package').version;
