@@ -14,7 +14,7 @@ const { events } = cache;
 
 const api = nock('http://www.example.com');
 
-const VERSION = require('../package').version;
+const VERSION = require('../config').schema.version;
 
 const defaultHeaders = {
   'cache-control': 'max-age=60'

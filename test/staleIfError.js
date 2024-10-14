@@ -14,7 +14,7 @@ const toError = require('@bbc/http-transport-to-error');
 const cache = require('../');
 const events = require('../').events;
 
-const VERSION = require('../package').version;
+const VERSION = require('../config').schema.version;
 const api = nock('http://www.example.com');
 
 const sandbox = sinon.createSandbox();
