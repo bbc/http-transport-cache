@@ -120,7 +120,7 @@ Both `maxage` and `staleIfError` accept an options object.
 
 The cache verison is stored in the `config.json`, this is distinct from the library version in the `package.json`. The cache version is used in the cache key and is intended to reduce cache fragmentation in a scenario where multiple different versions of this library might be in use across a single estate.
 
-The cache version **must** be incremented if a change is made to the data stored in the cache that would be incompatible with the existing version.  Otherwise it should not be changed.
+The cache version **must** be incremented if a change is made to the data stored in the cache that would be incompatible with the existing version. Otherwise it should not be changed.
 
 ## Cache Key Structure
  
