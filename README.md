@@ -116,6 +116,12 @@ Both `maxage` and `staleIfError` accept an options object.
 |`connectionCircuitBreakerOptions`|object|maxAge,staleIfError| When present an instance of [Levee](https://github.com/krakenjs/levee) will be created with these configuration options to use on connection to cache.|
 |`includeCacheStatusInCtx`|boolean|maxAge,staleIfError| When present, a `cacheStatus` array - recording all cache events, will be set in `context` for use by other plugins. `includeCacheStatusInCtx` is `false` by default.|
 
+## Cache version
+
+The cache verison is stored in the `config.json`, this is distinct from the library version in the `package.json`. The cache version is used in the cache key and is intended to reduce cache fragmentation in a scenario where multiple different versions of this library might be in use across a single estate.
+
+The cache version **must** be incremented if a change is made to the data stored in the cache that would be incompatible with the existing version. Otherwise it should not be changed.
+
 ## Cache Key Structure
  
 The cache uses `catbox` to provide a simple pluggable interface, this supports segmenting the cache as well as IDs, thus the following segments are used:

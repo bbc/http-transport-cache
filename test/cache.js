@@ -11,7 +11,7 @@ const { events } = require('../');
 
 const sandbox = sinon.createSandbox();
 const SEGMENT = 'body';
-const VERSION = require('../package').version;
+const VERSION = require('../config').cache.version;
 const bodySegment = {
   segment: `http-transport:${VERSION}:body`,
   id: 'GET:http://www.example.com/'
