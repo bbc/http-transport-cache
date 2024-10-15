@@ -7,7 +7,7 @@ const Catbox = require('@hapi/catbox');
 const Memory = require('@hapi/catbox-memory').Engine;
 const bluebird = require('bluebird');
 
-const VERSION = require('../config').schema.version;
+const VERSION = require('../config').cache.version;
 const httpTransportCache = require('../');
 
 const bodySegment = {
