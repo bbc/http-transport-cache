@@ -45,7 +45,6 @@
     "@hapi/catbox-memory": "^6.0.1",
     "@hapi/wreck": "^18.0.1",
     "bluebird": "^3.7.2",
-    "levee": "^1.5.1",
     "lodash": "^4.17.20"
   },
   "peerDependencies": {
