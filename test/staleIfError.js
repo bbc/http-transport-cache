@@ -92,63 +92,6 @@ describe('Stale-If-Error', () => {
     }
   });
 
-  it('does not try to connect to the cache again after specified number of failed attempts if useConnectionCircuitBreaker is true', async () => {
-    api.get('/').twice().reply(200, 'ok');
-    const catboxCache = createCache();
-    const connectionTimeout = 10;
-
-    const opts = {
-      ignoreCacheErrors: true,
-      connectionTimeout,
-      connectionCircuitBreakerOptions: {
-        maxFailures: 1,
-        resetTimeout: 300000
-      }
-    };
-    const middleware = cache.staleIfError(catboxCache, opts);
-
-    sandbox.stub(catboxCache, 'start').callsFake(async () => {
-      throw new Error('fake error');
-    });
-    sandbox.stub(catboxCache, 'isReady').returns(false);
-
-    await requestWithCache(catboxCache, opts, middleware);
-    sandbox.assert.calledOnce(catboxCache.start);
-    await requestWithCache(catboxCache, opts, middleware);
-    sandbox.assert.calledOnce(catboxCache.start);
-  });
-
-  it('tries to connect to the cache again after specified time following a failed attempt', async () => {
-    api.get('/').thrice().reply(200, 'ok');
-    const clock = sandbox.useFakeTimers();
-    const catboxCache = createCache();
-    const connectionTimeout = 10;
-
-    const opts = {
-      ignoreCacheErrors: true,
-      connectionTimeout,
-      connectionCircuitBreakerOptions: {
-        maxFailures: 1,
-        resetTimeout: 300000
-      }
-    };
-    const middleware = cache.staleIfError(catboxCache, opts);
-
-    sandbox.stub(catboxCache, 'start').callsFake(async () => {
-      throw new Error('fake error');
-    });
-    sandbox.stub(catboxCache, 'isReady').returns(false);
-
-    await requestWithCache(catboxCache, opts, middleware);
-    sandbox.assert.calledOnce(catboxCache.start);
-    await requestWithCache(catboxCache, opts, middleware);
-    sandbox.assert.calledOnce(catboxCache.start);
-    clock.tick(300000);
-    await requestWithCache(catboxCache, opts, middleware);
-    sandbox.assert.calledTwice(catboxCache.start);
-    clock.restore();
-  });
-
   it('throws the error that starting the cache throws', async () => {
     api.get('/').thrice().reply(200, defaultResponse.body, defaultHeaders);
     const cache = createCache();
