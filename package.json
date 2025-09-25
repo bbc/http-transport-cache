@@ -4,11 +4,10 @@
   "description": "Caching middleware",
   "main": "index.js",
   "scripts": {
-    "test": "mocha",
+    "test": "mocha && npm run lint",
     "coverage": "nyc mocha && nyc report --reporter=html && nyc report --reporter=json-summary",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "posttest": "npm run lint"
+    "lint:fix": "eslint . --fix"
   },
   "repository": {
     "type": "git",
