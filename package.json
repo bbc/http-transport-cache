@@ -30,14 +30,14 @@
   "devDependencies": {
     "@bbc/http-transport": "^4.3.0",
     "@bbc/http-transport-to-error": "^2.2.0",
-    "chai": "^4.1.2",
-    "eslint": "^8.54.0",
-    "eslint-config-iplayer": "^9.1.0",
-    "eslint-plugin-mocha": "^10.2.0",
-    "mocha": "^10.3.0",
-    "nock": "^13.0.4",
-    "nyc": "^15.1.0",
-    "sinon": "^9.0.3"
+    "chai": "^6.0.1",
+    "eslint": "^9.36.0",
+    "eslint-config-iplayer": "^10.0.1",
+    "eslint-plugin-mocha": "^11.1.0",
+    "mocha": "^11.7.2",
+    "nock": "^14.0.10",
+    "nyc": "^17.1.0",
+    "sinon": "^21.0.0"
   },
   "dependencies": {
     "@hapi/catbox": "^12.1.1",
