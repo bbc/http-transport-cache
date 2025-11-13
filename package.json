@@ -4,7 +4,7 @@
   "description": "Caching middleware",
   "main": "index.js",
   "scripts": {
-    "test": "mocha && npm run lint",
+    "test": "mocha && pnpm run lint",
     "coverage": "nyc mocha && nyc report --reporter=html && nyc report --reporter=json-summary",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
@@ -17,7 +17,8 @@
     "url": "https://github.com/bbc/http-transport-cache/issues"
   },
   "engines": {
-    "node": ">=8.13.0"
+    "node": ">=8.13.0",
+    "pnpm": ">=10"
   },
   "keywords": [
     "http-transport",

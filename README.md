@@ -12,7 +12,7 @@ A HTTP spec compliant caching layer for `http-transport`.
 ## Installation
 
 ```
-npm install --save http-transport-cache
+pnpm install --save http-transport-cache
 ```
 
 ## Usage
@@ -159,11 +159,11 @@ This way we avoid overwritting data in the store.
 ## Test
 
 ```
-npm test
+pnpm test
 ```
 
 To generate a test coverage report:
 
 ```
-npm run coverage
+pnpm run coverage
 ```
