@@ -54,7 +54,16 @@
     "extends": "iplayer",
     "parserOptions": {
       "ecmaVersion": "latest"
+    },
+      "overrides": [
+    {
+      "files": ["test/**/*.js"], 
+      "rules": {
+        "listeners/no-inline-function-event-listener": "off",
+        "listeners/no-missing-remove-event-listener": "off"
+      }
     }
+  ]
   },
   "mocha": {
     "recursive": true,

@@ -224,6 +224,7 @@ describe('Max-Age', () => {
       .get('http://www.example.com/')
       .asResponse();
 
+    // eslint-disable-next-line clean-timer/assign-timer-id
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Populate the near cache
