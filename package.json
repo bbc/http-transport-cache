@@ -4,8 +4,8 @@
   "description": "Caching middleware",
   "main": "index.js",
   "scripts": {
-    "test": "mocha && pnpm run lint",
-    "coverage": "nyc mocha && nyc report --reporter=html && nyc report --reporter=json-summary",
+    "test": "jest && pnpm run lint",
+    "coverage": "jest --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
@@ -34,10 +34,8 @@
     "chai": "^4.1.2",
     "eslint": "^8.54.0",
     "eslint-config-iplayer": "^9.1.0",
-    "eslint-plugin-mocha": "^10.2.0",
-    "mocha": "^10.3.0",
+    "jest": "^30.5.2",
     "nock": "^13.0.4",
-    "nyc": "^15.1.0",
     "sinon": "^9.0.3"
   },
   "dependencies": {
@@ -55,18 +53,26 @@
     "parserOptions": {
       "ecmaVersion": "latest"
     },
-      "overrides": [
-    {
-      "files": ["test/**/*.js"], 
-      "rules": {
-        "listeners/no-inline-function-event-listener": "off",
-        "listeners/no-missing-remove-event-listener": "off"
+    "overrides": [
+      {
+        "files": [
+          "test/**/*.js"
+        ],
+        "env": {
+          "jest": true
+        },
+        "rules": {
+          "listeners/no-inline-function-event-listener": "off",
+          "listeners/no-missing-remove-event-listener": "off"
+        }
       }
-    }
-  ]
+    ]
   },
-  "mocha": {
-    "recursive": true,
-    "exit": true
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "<rootDir>/test/**/*.js"
+    ],
+    "forceExit": true
   }
 }
