@@ -26,11 +26,11 @@ importers:
         version: 3.7.2
     devDependencies:
       '@bbc/http-transport':
-        specifier: ^4.3.0
-        version: 4.6.2
+        specifier: ^5.0.0
+        version: 5.0.0
       '@bbc/http-transport-to-error':
         specifier: ^2.2.0
-        version: 2.2.2(@bbc/http-transport@4.6.2)
+        version: 2.2.2(@bbc/http-transport@5.0.0)
       '@biomejs/biome':
         specifier: 2.5.15
         version: 2.5.15
@@ -214,9 +214,9 @@ packages:
     peerDependencies:
       '@bbc/http-transport': ^3 || ^4
 
-  '@bbc/http-transport@4.6.2':
-    resolution: {integrity: sha512-2ze4lZH0a1uOdrkmXcaQWnyieAnZl4By9GjZ6j2qczKxmCjQg3YBsHoYcUhmDjJFThkA5XC0/8ksBm9Mf9onmg==}
-    engines: {node: '>=18.0.0'}
+  '@bbc/http-transport@5.0.0':
+    resolution: {integrity: sha512-Hc/gsMDUNRGtgToEgdbI3/oK7MNqFRMGzZ5hrrZxGXg22K7YQA1Mx4y6W06NP5f/idlj2toY7EViW+suv7jGng==}
+    engines: {node: '>=24.0.0', pnpm: '>=10'}
 
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
@@ -1846,11 +1846,11 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.27.1
 
-  '@bbc/http-transport-to-error@2.2.2(@bbc/http-transport@4.6.2)':
+  '@bbc/http-transport-to-error@2.2.2(@bbc/http-transport@5.0.0)':
     dependencies:
-      '@bbc/http-transport': 4.6.2
+      '@bbc/http-transport': 5.0.0
 
-  '@bbc/http-transport@4.6.2':
+  '@bbc/http-transport@5.0.0':
     dependencies:
       '@types/node-fetch': 2.6.13
       http-proxy-agent: 7.0.2
