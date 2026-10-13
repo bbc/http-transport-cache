@@ -43,7 +43,7 @@
     "bluebird": "^3.7.2"
   },
   "peerDependencies": {
-    "@bbc/http-transport": "^3 || ^4"
+    "@bbc/http-transport": "^5.0.0"
   },
   "jest": {
     "testEnvironment": "node",
