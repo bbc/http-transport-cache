@@ -1,6 +1,6 @@
 'use strict';
 
-const assert = require('chai').assert;
+const assert = require('assert');
 const Catbox = require('@hapi/catbox');
 const Memory = require('@hapi/catbox-memory').Engine;
 const nock = require('nock');
@@ -209,7 +209,7 @@ describe('Stale-If-Error', () => {
       .asResponse();
 
     const cached = await catbox.get(bodySegment);
-    assert.isNull(cached);
+    assert.strictEqual(cached, null);
   });
 
   it('does create cache entries for client errors', async () => {
@@ -249,7 +249,7 @@ describe('Stale-If-Error', () => {
       .asResponse();
 
     const cachedItem = await nearCache.get(bodySegment);
-    assert.isNull(cachedItem);
+    assert.strictEqual(cachedItem, null);
   });
 
   it('does not store if no cache-control', async () => {
@@ -271,7 +271,7 @@ describe('Stale-If-Error', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.isNull(cached);
+    assert.strictEqual(cached, null);
   });
 
   it('does not store if no-store', async () => {
@@ -283,7 +283,7 @@ describe('Stale-If-Error', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.isNull(cached);
+    assert.strictEqual(cached, null);
   });
 
   it('does not store if private', async () => {
@@ -295,7 +295,7 @@ describe('Stale-If-Error', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.isNull(cached);
+    assert.strictEqual(cached, null);
   });
 
   it('stores even if no max-age', async () => {
@@ -524,7 +524,7 @@ describe('Stale-If-Error', () => {
       await cache.set(bodySegment, cachedResponse, 7200);
       await requestWithCache(cache, opts);
 
-      assert.instanceOf(context, httpTransport.context);
+      assert.ok(context instanceof httpTransport.context);
     });
 
     it('emits a timeout cache event with the correct context', async () => {
@@ -548,7 +548,7 @@ describe('Stale-If-Error', () => {
           timeout: 10
         });
       } catch (err) {
-        return assert.instanceOf(context, httpTransport.context);
+        return assert.ok(context instanceof httpTransport.context);
       }
 
       assert.fail('Expected to throw');
@@ -571,7 +571,7 @@ describe('Stale-If-Error', () => {
       try {
         await requestWithCache(cache);
       } catch (err) {
-        return assert.instanceOf(context, httpTransport.context);
+        return assert.ok(context instanceof httpTransport.context);
       }
 
       assert.fail('Expected to throw');

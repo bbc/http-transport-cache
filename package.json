@@ -31,7 +31,6 @@
   "devDependencies": {
     "@bbc/http-transport": "^4.3.0",
     "@bbc/http-transport-to-error": "^2.2.0",
-    "chai": "^4.1.2",
     "eslint": "^8.54.0",
     "eslint-config-iplayer": "^9.1.0",
     "jest": "^30.5.2",

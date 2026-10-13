@@ -1,6 +1,6 @@
 'use strict';
 
-const assert = require('chai').assert;
+const assert = require('assert');
 const Catbox = require('@hapi/catbox');
 const Memory = require('@hapi/catbox-memory').Engine;
 const bluebird = require('bluebird');
@@ -91,7 +91,7 @@ describe('Cache', () => {
     try {
       await getFromCache(cache, SEGMENT, ctx, { timeout });
     } catch (err) {
-      assert.isFalse(cacheLookupComplete);
+      assert.strictEqual(cacheLookupComplete, false);
       return assert.equal(err.message, `Cache get timed out after ${timeout}ms - url: http://www.example.com/ - segment: body`);
     }
     assert.fail();
@@ -110,7 +110,7 @@ describe('Cache', () => {
     const timeout = 10;
     await storeInCache(cache, SEGMENT, ctx, body, 600, { timeout });
 
-    assert.isFalse(cacheSetComplete);
+    assert.strictEqual(cacheSetComplete, false);
   });
 });
 
@@ -128,7 +128,7 @@ describe('events', () => {
     await cache.start();
     await storeInCache(cache, SEGMENT, ctx, { a: 1 }, 600, opts);
 
-    assert.isNumber(writeDuration);
+    assert.strictEqual(typeof writeDuration, 'number');
   });
 
   it('emits a time stats when getting a value from the cache', async () => {
@@ -143,7 +143,7 @@ describe('events', () => {
     await cache.start();
     await cache.set(bodySegment, cachedResponse, 600);
     await getFromCache(cache, SEGMENT, ctx, opts);
-    assert.isNumber(readDuration);
+    assert.strictEqual(typeof readDuration, 'number');
   });
 
   it('emits a timeout event with correct context', async () => {
