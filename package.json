@@ -6,8 +6,8 @@
   "scripts": {
     "test": "jest && pnpm run lint",
     "coverage": "jest --coverage",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
   },
   "repository": {
     "type": "git",
@@ -31,8 +31,7 @@
   "devDependencies": {
     "@bbc/http-transport": "^4.3.0",
     "@bbc/http-transport-to-error": "^2.2.0",
-    "eslint": "^8.54.0",
-    "eslint-config-iplayer": "^9.1.0",
+    "@biomejs/biome": "2.5.15",
     "jest": "^30.5.2",
     "nock": "^13.0.4",
     "sinon": "^9.0.3"
@@ -46,26 +45,6 @@
   },
   "peerDependencies": {
     "@bbc/http-transport": "^3 || ^4"
-  },
-  "eslintConfig": {
-    "extends": "iplayer",
-    "parserOptions": {
-      "ecmaVersion": "latest"
-    },
-    "overrides": [
-      {
-        "files": [
-          "test/**/*.js"
-        ],
-        "env": {
-          "jest": true
-        },
-        "rules": {
-          "listeners/no-inline-function-event-listener": "off",
-          "listeners/no-missing-remove-event-listener": "off"
-        }
-      }
-    ]
   },
   "jest": {
     "testEnvironment": "node",

@@ -1,6 +1,4 @@
-'use strict';
-
-const assert = require('assert');
+const assert = require('node:assert');
 const Catbox = require('@hapi/catbox');
 const Memory = require('@hapi/catbox-memory').Engine;
 const bluebird = require('bluebird');
@@ -14,14 +12,14 @@ const SEGMENT = 'body';
 const VERSION = require('../config').cache.version;
 const bodySegment = {
   segment: `http-transport:${VERSION}:body`,
-  id: 'GET:http://www.example.com/'
+  id: 'GET:http://www.example.com/',
 };
 
 const cachedResponse = {
   body: 'http-transport',
   statusCode: 200,
   url: 'http://www.example.com/',
-  elapsedTime: 40
+  elapsedTime: 40,
 };
 
 function createCache() {
@@ -35,8 +33,8 @@ const ctx = {
     },
     getUrl() {
       return 'http://www.example.com/';
-    }
-  }
+    },
+  },
 };
 
 describe('Cache', () => {
@@ -92,7 +90,10 @@ describe('Cache', () => {
       await getFromCache(cache, SEGMENT, ctx, { timeout });
     } catch (err) {
       assert.strictEqual(cacheLookupComplete, false);
-      return assert.equal(err.message, `Cache get timed out after ${timeout}ms - url: http://www.example.com/ - segment: body`);
+      return assert.equal(
+        err.message,
+        `Cache get timed out after ${timeout}ms - url: http://www.example.com/ - segment: body`,
+      );
     }
     assert.fail();
   });
@@ -118,7 +119,7 @@ describe('events', () => {
   it('emits a time stats event when storing a value in the cache', async () => {
     let writeDuration;
     const opts = {
-      name: 'whatever'
+      name: 'whatever',
     };
     events.on(`cache.${opts.name}.write_time`, (ctx) => {
       writeDuration = ctx.cacheDuration;
@@ -134,7 +135,7 @@ describe('events', () => {
   it('emits a time stats when getting a value from the cache', async () => {
     let readDuration;
     const opts = {
-      name: 'whatever'
+      name: 'whatever',
     };
     events.on(`cache.${opts.name}.read_time`, (ctx) => {
       readDuration = ctx.cacheDuration;
@@ -160,7 +161,7 @@ describe('events', () => {
     await cache.start();
     try {
       await getFromCache(cache, SEGMENT, ctx, { timeout: 50 });
-    } catch (err) {
+    } catch (_err) {
       return assert.deepStrictEqual(eventContext, ctx);
     }
     assert.fail();
@@ -181,7 +182,7 @@ describe('events', () => {
     await cache.start();
     try {
       await getFromCache(cache, SEGMENT, ctx, { timeout: 50 });
-    } catch (err) {
+    } catch (_err) {
       assert.equal(ctx.cacheStatus, undefined);
       return assert.deepStrictEqual(eventContext, ctx);
     }
@@ -203,8 +204,11 @@ describe('events', () => {
     const includeCacheStatusInCtx = true;
     await cache.start();
     try {
-      await getFromCache(cache, SEGMENT, ctx, { timeout: 50, includeCacheStatusInCtx });
-    } catch (err) {
+      await getFromCache(cache, SEGMENT, ctx, {
+        timeout: 50,
+        includeCacheStatusInCtx,
+      });
+    } catch (_err) {
       assert.deepStrictEqual(ctx.cacheStatus, ['timeout']);
       return assert.deepStrictEqual(eventContext, ctx);
     }
@@ -218,7 +222,7 @@ describe('events', () => {
     });
 
     let emmitedError;
-    events.on('cache.timeout', (ctx, err) => {
+    events.on('cache.timeout', (_ctx, err) => {
       emmitedError = err;
     });
 
@@ -247,7 +251,10 @@ describe('events', () => {
     delete ctx.cacheStatus;
     const includeCacheStatusInCtx = true;
     await cache.start();
-    await storeInCache(cache, SEGMENT, ctx, body, 600, { timeout: 10, includeCacheStatusInCtx });
+    await storeInCache(cache, SEGMENT, ctx, body, 600, {
+      timeout: 10,
+      includeCacheStatusInCtx,
+    });
 
     assert.deepStrictEqual(ctx.cacheStatus, ['timeout']);
     assert.deepStrictEqual(eventContext, ctx);
@@ -281,14 +288,17 @@ describe('events', () => {
     });
 
     let emmitedError;
-    events.on('cache.timeout', (ctx, err) => {
+    events.on('cache.timeout', (_ctx, err) => {
       emmitedError = err;
     });
 
     await cache.start();
     await storeInCache(cache, SEGMENT, ctx, body, 600, { timeout: 10 });
 
-    assert.deepEqual(emmitedError.message, 'Cache set timed out after 10ms - url: http://www.example.com/ - segment: body');
+    assert.deepEqual(
+      emmitedError.message,
+      'Cache set timed out after 10ms - url: http://www.example.com/ - segment: body',
+    );
   });
 
   it('emits a cache error event with correct context', async () => {
@@ -303,7 +313,7 @@ describe('events', () => {
     await cache.start();
     try {
       await getFromCache(cache, SEGMENT, ctx, { timeout: 50 });
-    } catch (err) {
+    } catch (_err) {
       return assert.deepStrictEqual(eventContext, ctx);
     }
     assert.fail();
@@ -315,14 +325,14 @@ describe('events', () => {
     sandbox.stub(cache, 'get').rejects(errorObject);
 
     let errorEmitted;
-    events.on('cache.error', (ctx, err) => {
+    events.on('cache.error', (_ctx, err) => {
       errorEmitted = err;
     });
 
     await cache.start();
     try {
       await getFromCache(cache, SEGMENT, ctx, { timeout: 50 });
-    } catch (err) {
+    } catch (_err) {
       return assert.deepStrictEqual(errorEmitted, errorObject);
     }
     assert.fail();
@@ -343,14 +353,14 @@ describe('events', () => {
 
     const opts = {
       name: 'ceych',
-      timeout: 50
+      timeout: 50,
     };
 
     await cache.start();
 
     try {
       await getFromCache(cache, SEGMENT, ctx, opts);
-    } catch (err) {
+    } catch (_err) {
       return assert.ok(cacheTimeout);
     }
     assert.fail();
@@ -370,7 +380,7 @@ describe('events', () => {
     await cache.start();
     try {
       await getFromCache(cache, SEGMENT, ctx, { timeout: 50 });
-    } catch (err) {
+    } catch (_err) {
       return assert.ok(cacheTimeout);
     }
     assert.fail();
@@ -388,7 +398,7 @@ describe('events', () => {
     await cache.start();
     try {
       await getFromCache(cache, SEGMENT, ctx);
-    } catch (err) {
+    } catch (_err) {
       return assert.ok(cacheError);
     }
     assert.fail();
@@ -414,7 +424,7 @@ describe('events', () => {
     sandbox.stub(cache, 'set').rejects(errorObject);
 
     let errorEmitted;
-    events.on('cache.error', (ctx, err) => {
+    events.on('cache.error', (_ctx, err) => {
       errorEmitted = err;
     });
 
@@ -435,7 +445,7 @@ describe('events', () => {
     await cache.start();
     try {
       await getFromCache(cache, SEGMENT, ctx, { ignoreCacheErrors: true });
-    } catch (error) {
+    } catch (_error) {
       assert.ok(cacheError);
       return;
     }
@@ -455,8 +465,12 @@ describe('events', () => {
 
     delete ctx.cacheStatus;
     await cache.start();
-    await storeInCache(cache, SEGMENT, ctx, body, 600, { includeCacheStatusInCtx: true });
-    await storeInCache(cache, SEGMENT, ctx, body, 600, { includeCacheStatusInCtx: true });
+    await storeInCache(cache, SEGMENT, ctx, body, 600, {
+      includeCacheStatusInCtx: true,
+    });
+    await storeInCache(cache, SEGMENT, ctx, body, 600, {
+      includeCacheStatusInCtx: true,
+    });
 
     assert.deepStrictEqual(context.cacheStatus, ['error', 'error']);
   });

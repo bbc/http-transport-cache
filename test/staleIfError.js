@@ -1,6 +1,4 @@
-'use strict';
-
-const assert = require('assert');
+const assert = require('node:assert');
 const Catbox = require('@hapi/catbox');
 const Memory = require('@hapi/catbox-memory').Engine;
 const nock = require('nock');
@@ -20,7 +18,7 @@ const api = nock('http://www.example.com');
 const sandbox = sinon.createSandbox();
 
 const defaultHeaders = {
-  'cache-control': 'max-age=60,stale-if-error=7200'
+  'cache-control': 'max-age=60,stale-if-error=7200',
 };
 
 const defaultResponse = {
@@ -28,12 +26,12 @@ const defaultResponse = {
   url: 'http://www.example.com/',
   statusCode: 200,
   elapsedTime: 40,
-  headers: defaultHeaders
+  headers: defaultHeaders,
 };
 
 const bodySegment = {
   segment: `http-transport:${VERSION}:stale`,
-  id: 'GET:http://www.example.com/'
+  id: 'GET:http://www.example.com/',
 };
 
 nock.disableNetConnect();
@@ -43,16 +41,13 @@ function createCache() {
 }
 
 function createCacheClient(catbox, opts, existingCacheMiddleware) {
-  const cacheMiddlware = existingCacheMiddleware || cache.staleIfError(catbox, opts);
-  return httpTransport.createClient()
-    .use(cacheMiddlware);
+  const cacheMiddlware =
+    existingCacheMiddleware || cache.staleIfError(catbox, opts);
+  return httpTransport.createClient().use(cacheMiddlware);
 }
 
 function requestWithClient(client) {
-  return client
-    .get('http://www.example.com/')
-    .use(toError())
-    .asResponse();
+  return client.get('http://www.example.com/').use(toError()).asResponse();
 }
 
 async function requestWithCache(catbox, opts, cacheMiddlware) {
@@ -65,7 +60,7 @@ describe('Stale-If-Error', () => {
     sandbox.restore();
   });
 
-  it('starts the cache if it\'s not already started', async () => {
+  it("starts the cache if it's not already started", async () => {
     const cache = createCache();
     sandbox.spy(cache, 'start');
 
@@ -86,7 +81,10 @@ describe('Stale-If-Error', () => {
     const connectionTimeout = 10;
 
     try {
-      await requestWithCache(cache, { ignoreCacheErrors: false, connectionTimeout });
+      await requestWithCache(cache, {
+        ignoreCacheErrors: false,
+        connectionTimeout,
+      });
     } catch (error) {
       assert.equal(error.message, 'Starting cache timed out after 10');
     }
@@ -100,7 +98,7 @@ describe('Stale-If-Error', () => {
     sandbox.stub(cache, 'start').rejects(startError);
     try {
       await requestWithCache(cache, {
-        ignoreCacheErrors: false
+        ignoreCacheErrors: false,
       });
       throw new Error('this should not pass');
     } catch (error) {
@@ -118,10 +116,12 @@ describe('Stale-If-Error', () => {
     function requestWithCacheAndNextMiddleware() {
       return httpTransport
         .createClient()
-        .use(cache.staleIfError(catbox, {
-          ignoreCacheErrors: true
-        }))
-        .use((ctx, next) => {
+        .use(
+          cache.staleIfError(catbox, {
+            ignoreCacheErrors: true,
+          }),
+        )
+        .use((_ctx, next) => {
           return next();
         })
         .get('http://www.example.com/')
@@ -173,7 +173,7 @@ describe('Stale-If-Error', () => {
     sandbox.stub(catbox, 'set').resolves();
 
     const headers = {
-      'cache-control': 'stale-if-error=7200'
+      'cache-control': 'stale-if-error=7200',
     };
 
     const response = {
@@ -181,7 +181,7 @@ describe('Stale-If-Error', () => {
       url: 'http://www.example.com/',
       statusCode: 200,
       elapsedTime: 40,
-      headers
+      headers,
     };
 
     api.get('/').reply(200, response.body, headers);
@@ -266,7 +266,7 @@ describe('Stale-If-Error', () => {
     const cache = createCache();
 
     api.get('/').reply(200, defaultResponse, {
-      'cache-control': 'stale-if-error=0'
+      'cache-control': 'stale-if-error=0',
     });
 
     await requestWithCache(cache);
@@ -278,7 +278,7 @@ describe('Stale-If-Error', () => {
     const cache = createCache();
 
     api.get('/').reply(200, defaultResponse, {
-      'cache-control': 'no-store'
+      'cache-control': 'no-store',
     });
 
     await requestWithCache(cache);
@@ -290,7 +290,7 @@ describe('Stale-If-Error', () => {
     const cache = createCache();
 
     api.get('/').reply(200, defaultResponse, {
-      'cache-control': 'private'
+      'cache-control': 'private',
     });
 
     await requestWithCache(cache);
@@ -302,7 +302,7 @@ describe('Stale-If-Error', () => {
     const cache = createCache();
 
     api.get('/').reply(200, defaultResponse, {
-      'cache-control': 'stale-if-error=7200'
+      'cache-control': 'stale-if-error=7200',
     });
 
     await requestWithCache(cache);
@@ -313,7 +313,7 @@ describe('Stale-If-Error', () => {
   it('does not store if cache control headers are non numbers', async () => {
     const cache = createCache();
     api.get('/').reply(200, defaultResponse.body, {
-      'cache-control': 'stale-if-error =NAN'
+      'cache-control': 'stale-if-error =NAN',
     });
 
     await requestWithCache(cache);
@@ -327,7 +327,7 @@ describe('Stale-If-Error', () => {
       headers: defaultHeaders,
       elapsedTime: 40,
       url: 'http://www.example.com/',
-      statusCode: 200
+      statusCode: 200,
     };
     const cache = createCache();
 
@@ -352,9 +352,11 @@ describe('Stale-If-Error', () => {
 
     try {
       await requestWithCache(cache);
-
     } catch (err) {
-      return assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
+      return assert.equal(
+        err.message,
+        'Received HTTP code 500 for GET http://www.example.com/',
+      );
     }
     assert.fail('Expected to throw');
   });
@@ -365,7 +367,6 @@ describe('Stale-If-Error', () => {
 
     try {
       await requestWithCache(cache);
-
     } catch (err) {
       return assert.equal(err.message, 'cache lookup error');
     }
@@ -379,7 +380,7 @@ describe('Stale-If-Error', () => {
 
     try {
       await requestWithCache(cache);
-    } catch (err) {
+    } catch (_err) {
       sinon.assert.notCalled(cache.set);
       return;
     }
@@ -393,7 +394,7 @@ describe('Stale-If-Error', () => {
 
     try {
       await requestWithCache(cache, { ignoreCacheErrors: true });
-    } catch (err) {
+    } catch (_err) {
       sinon.assert.notCalled(cache.set);
       return;
     }
@@ -407,15 +408,18 @@ describe('Stale-If-Error', () => {
 
     try {
       await requestWithCache(cache, {
-        ignoreCacheErrors: true
+        ignoreCacheErrors: true,
       });
     } catch (err) {
-      return assert.equal(err.message, 'Received HTTP code 500 for GET http://www.example.com/');
+      return assert.equal(
+        err.message,
+        'Received HTTP code 500 for GET http://www.example.com/',
+      );
     }
     assert.fail('Expected to throw');
   });
 
-  it('continues to the next middleware when there\'s an error and no error handler', async () => {
+  it("continues to the next middleware when there's an error and no error handler", async () => {
     const catbox = createCache();
 
     api.get('/').reply(500, defaultResponse.body, defaultHeaders);
@@ -424,7 +428,7 @@ describe('Stale-If-Error', () => {
     await httpTransport
       .createClient()
       .use(cache.staleIfError(catbox))
-      .use((ctx, next) => {
+      .use((_ctx, next) => {
         called = true;
         return next();
       })
@@ -440,13 +444,13 @@ describe('Stale-If-Error', () => {
       headers: defaultHeaders,
       elapsedTime: 40,
       url: 'http://www.example.com/',
-      statusCode: 200
+      statusCode: 200,
     };
 
     it('emits a connection_error event with error when cache.start fails', async () => {
       api.get('/').reply(200, 'ok');
       let cacheConnectionError = null;
-      events.on('cache.connection_error', (ctx, err) => {
+      events.on('cache.connection_error', (_ctx, err) => {
         cacheConnectionError = err;
       });
       const catboxCache = createCache();
@@ -454,7 +458,7 @@ describe('Stale-If-Error', () => {
 
       const opts = {
         ignoreCacheErrors: true,
-        connectionTimeout
+        connectionTimeout,
       };
       const middleware = cache.staleIfError(catboxCache, opts);
 
@@ -465,7 +469,10 @@ describe('Stale-If-Error', () => {
 
       await requestWithCache(catboxCache, opts, middleware);
 
-      assert(cacheConnectionError instanceof Error, 'expected error to have been emitted');
+      assert(
+        cacheConnectionError instanceof Error,
+        'expected error to have been emitted',
+      );
       assert.strictEqual(cacheConnectionError.message, 'fake error');
     });
 
@@ -487,7 +494,7 @@ describe('Stale-If-Error', () => {
 
     it('emits a stale cache event with cache name when present', async () => {
       const opts = {
-        name: 'ceych'
+        name: 'ceych',
       };
 
       let cacheStale = false;
@@ -508,7 +515,7 @@ describe('Stale-If-Error', () => {
 
     it('emits a stale cache event with the correct context', async () => {
       const opts = {
-        name: 'ceych'
+        name: 'ceych',
       };
 
       let context;
@@ -545,9 +552,9 @@ describe('Stale-If-Error', () => {
 
       try {
         await requestWithCache(cache, {
-          timeout: 10
+          timeout: 10,
         });
-      } catch (err) {
+      } catch (_err) {
         return assert.ok(context instanceof httpTransport.context);
       }
 
@@ -570,7 +577,7 @@ describe('Stale-If-Error', () => {
 
       try {
         await requestWithCache(cache);
-      } catch (err) {
+      } catch (_err) {
         return assert.ok(context instanceof httpTransport.context);
       }
 
@@ -594,7 +601,7 @@ describe('Stale-If-Error', () => {
 
       const cached = await cache.get({
         segment: `http-transport:${VERSION}:stale`,
-        id: 'GET:http://www.example.com/'
+        id: 'GET:http://www.example.com/',
       });
 
       const actualExpiry = cached.ttl + cached.stored;
@@ -619,7 +626,7 @@ describe('Stale-If-Error', () => {
 
       const cached = await cache.get({
         segment: `http-transport:${VERSION}:stale`,
-        id: 'GET:http://www.example.com/?q=about'
+        id: 'GET:http://www.example.com/?q=about',
       });
 
       const actualExpiry = cached.ttl + cached.stored;
@@ -633,16 +640,13 @@ describe('Stale-If-Error', () => {
       const headers = {
         'cache-control': 'max-age=60,stale-if-error=7200',
         'accept-language': 'en',
-        accept: 'application/json'
+        accept: 'application/json',
       };
       const cache = createCache();
       api.get('/some-cacheable-path').reply(200, defaultResponse.body, headers);
 
       const opts = {
-        varyOn: [
-          'accept-language',
-          'accept'
-        ]
+        varyOn: ['accept-language', 'accept'],
       };
 
       const maxAge = 60000;
@@ -656,7 +660,7 @@ describe('Stale-If-Error', () => {
 
       const cached = await cache.get({
         segment: `http-transport:${VERSION}:stale`,
-        id: 'GET:http://www.example.com/some-cacheable-path:accept-language=en,accept=application/json'
+        id: 'GET:http://www.example.com/some-cacheable-path:accept-language=en,accept=application/json',
       });
 
       const actualExpiry = cached.ttl + cached.stored;
@@ -670,16 +674,13 @@ describe('Stale-If-Error', () => {
       const headers = {
         'cache-control': 'max-age=60,stale-if-error=7200',
         'accept-language': 'en',
-        accept: 'application/json'
+        accept: 'application/json',
       };
       const cache = createCache();
       api.get('/some-cacheable-path').reply(200, defaultResponse.body, headers);
 
       const opts = {
-        varyOn: [
-          'some-rand-header-a',
-          'some-rand-header-b'
-        ]
+        varyOn: ['some-rand-header-a', 'some-rand-header-b'],
       };
 
       const maxAge = 60000;
@@ -693,7 +694,7 @@ describe('Stale-If-Error', () => {
 
       const cached = await cache.get({
         segment: `http-transport:${VERSION}:stale`,
-        id: 'GET:http://www.example.com/some-cacheable-path:some-rand-header-a=,some-rand-header-b='
+        id: 'GET:http://www.example.com/some-cacheable-path:some-rand-header-a=,some-rand-header-b=',
       });
 
       const actualExpiry = cached.ttl + cached.stored;
