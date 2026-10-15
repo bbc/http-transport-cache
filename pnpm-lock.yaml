@@ -15,7 +15,11 @@ importers:
         specifier: ^6.0.1
         version: 6.0.2
       '@hapi/wreck':
+<<<<<<< Updated upstream
         specifier: ^18.0.1
+=======
+        specifier: ^18.1.2
+>>>>>>> Stashed changes
         version: 18.1.2
       bluebird:
         specifier: ^3.7.2
