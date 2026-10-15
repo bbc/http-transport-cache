@@ -25,8 +25,8 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1
       '@bbc/http-transport-to-error':
-        specifier: ^2.2.0
-        version: 2.2.2(@bbc/http-transport@5.0.1)
+        specifier: ^3.0.0
+        version: 3.0.0(@bbc/http-transport@5.0.1)
       '@biomejs/biome':
         specifier: 2.5.15
         version: 2.5.15
@@ -229,11 +229,11 @@ packages:
     resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
 
-  '@bbc/http-transport-to-error@2.2.2':
-    resolution: {integrity: sha512-4saudf05T9vTAnUNDP45a8tnJTmMWh9xAxY/JWMkLoWjSnh85Ho6YTwvtyTDRR+y0smel3YR4N4UcuBSqyLT6Q==}
-    engines: {node: '>=8.0.0'}
+  '@bbc/http-transport-to-error@3.0.0':
+    resolution: {integrity: sha512-x8R+rCXQZG4yPmWvsKNHkb4yHZ8CPolhqlVMtM90yK8xsnAD2a6gHb76gf8pYocIOM1+UGZrL0jREb+2aBjm5Q==}
+    engines: {node: '>=24.0.0'}
     peerDependencies:
-      '@bbc/http-transport': ^3 || ^4
+      '@bbc/http-transport': ^5.0.0
 
   '@bbc/http-transport@5.0.1':
     resolution: {integrity: sha512-yyKs9fLTtneeDjJBnZB5Vdgj4bQh3YO5g8nAHtqZ+YEOiNOH2fY1Q4PDQAcxsH5Bwa9Z7C36pv8lhMjsrnee9g==}
@@ -1904,7 +1904,7 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@bbc/http-transport-to-error@2.2.2(@bbc/http-transport@5.0.1)':
+  '@bbc/http-transport-to-error@3.0.0(@bbc/http-transport@5.0.1)':
     dependencies:
       '@bbc/http-transport': 5.0.1
 
