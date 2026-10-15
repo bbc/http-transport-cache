@@ -11,9 +11,6 @@ coverage/
 .npmrc
 biome.json
 
-# Local/dev config
-config.json
-
 # Package manager files
 pnpm-lock.yaml
 pnpm-workspace.yaml
