@@ -1,6 +1,4 @@
-'use strict';
-
-const assert = require('chai').assert;
+const assert = require('node:assert');
 const httpTransport = require('@bbc/http-transport');
 const Catbox = require('@hapi/catbox');
 const Memory = require('@hapi/catbox-memory').Engine;
@@ -17,7 +15,7 @@ const api = nock('http://www.example.com');
 const VERSION = require('../config').cache.version;
 
 const defaultHeaders = {
-  'cache-control': 'max-age=60'
+  'cache-control': 'max-age=60',
 };
 
 const defaultResponse = {
@@ -25,12 +23,12 @@ const defaultResponse = {
   url: 'http://www.example.com/',
   statusCode: 200,
   elapsedTime: 40,
-  headers: defaultHeaders
+  headers: defaultHeaders,
 };
 
 const bodySegment = {
   segment: `http-transport:${VERSION}:body`,
-  id: 'GET:http://www.example.com/'
+  id: 'GET:http://www.example.com/',
 };
 
 nock.disableNetConnect();
@@ -41,14 +39,11 @@ function createCache() {
 
 function createCacheClient(catbox, opts, existingCacheMiddleware) {
   const cacheMiddlware = existingCacheMiddleware || cache.maxAge(catbox, opts);
-  return httpTransport.createClient()
-    .use(cacheMiddlware);
+  return httpTransport.createClient().use(cacheMiddlware);
 }
 
 function requestWithClient(client) {
-  return client
-    .get('http://www.example.com/')
-    .asResponse();
+  return client.get('http://www.example.com/').asResponse();
 }
 
 async function requestWithCache(catbox, opts, cacheMiddlware) {
@@ -61,7 +56,7 @@ describe('Max-Age', () => {
     sandbox.restore();
   });
 
-  it('starts the cache if it\'s not already started', async () => {
+  it("starts the cache if it's not already started", async () => {
     const cache = createCache();
     sandbox.spy(cache, 'start');
 
@@ -97,7 +92,10 @@ describe('Max-Age', () => {
     const connectionTimeout = 10;
 
     try {
-      await requestWithCache(cache, { ignoreCacheErrors: false, connectionTimeout });
+      await requestWithCache(cache, {
+        ignoreCacheErrors: false,
+        connectionTimeout,
+      });
     } catch (error) {
       assert.equal(error.message, 'Starting cache timed out after 10');
     }
@@ -114,19 +112,14 @@ describe('Max-Age', () => {
       return httpTransport
         .createClient()
         .use(cache.maxAge(catbox, { ignoreCacheErrors: true }))
-        .use((ctx, next) => {
+        .use((_ctx, next) => {
           called = true;
           return next();
         })
         .get('http://www.example.com/')
         .asResponse();
     }
-
-    try {
-      await requestWithCacheAndNextMiddleware();
-    } catch (error) {
-      throw error;
-    }
+    await requestWithCacheAndNextMiddleware();
     assert.equal(called, true, 'Expected the next middleware to be called');
   });
 
@@ -191,7 +184,7 @@ describe('Max-Age', () => {
 
     const cached = await catbox.get(bodySegment);
 
-    assert.isNull(cached);
+    assert.strictEqual(cached, null);
   });
 
   it('does create cache entries for client errors', async () => {
@@ -236,7 +229,7 @@ describe('Max-Age', () => {
 
     const cachedItem = await nearCache.get(bodySegment);
 
-    assert.isBelow(cachedItem.ttl, 59950);
+    assert.ok(cachedItem.ttl < 59950);
   });
 
   it('ignore cache lookup errors', async () => {
@@ -283,7 +276,7 @@ describe('Max-Age', () => {
         .use(cache.maxAge(catbox))
         .get('http://www.example.com/')
         .asBody();
-    } catch (error) {
+    } catch (_error) {
       sinon.assert.notCalled(catbox.set);
       return;
     }
@@ -307,8 +300,11 @@ describe('Max-Age', () => {
         .get('http://www.example.com/')
         .asBody();
     } catch (err) {
-      assert.isFalse(cacheLookupComplete);
-      return assert.equal(err.message, `Cache get timed out after ${timeout}ms - url: http://www.example.com/ - segment: body`);
+      assert.strictEqual(cacheLookupComplete, false);
+      return assert.equal(
+        err.message,
+        `Cache get timed out after ${timeout}ms - url: http://www.example.com/ - segment: body`,
+      );
     }
     assert.fail('Expected to throw');
   });
@@ -331,17 +327,19 @@ describe('Max-Age', () => {
         .use(cache.maxAge(catbox, { timeout, ignoreCacheErrors: true }))
         .get('http://www.example.com/')
         .asBody();
-    } catch (err) {
+    } catch (_err) {
       return assert.fail(null, null, 'Failed on timeout');
     }
-    assert.isFalse(cacheLookupComplete);
+    assert.strictEqual(cacheLookupComplete, false);
     assert.equal(body, defaultResponse.body);
   });
 
   describe('cache keys', () => {
     it('keys cache entries by method and url', async () => {
       const cache = createCache();
-      api.get('/some-cacheable-path').reply(200, defaultResponse.body, defaultHeaders);
+      api
+        .get('/some-cacheable-path')
+        .reply(200, defaultResponse.body, defaultHeaders);
 
       const expiry = Date.now() + 60000;
 
@@ -351,7 +349,7 @@ describe('Max-Age', () => {
 
       const cached = await cache.get({
         segment: `http-transport:${VERSION}:body`,
-        id: 'GET:http://www.example.com/some-cacheable-path'
+        id: 'GET:http://www.example.com/some-cacheable-path',
       });
 
       const actualExpiry = cached.ttl + cached.stored;
@@ -363,7 +361,9 @@ describe('Max-Age', () => {
 
     it('keys cache entries by url including query strings in request url', async () => {
       const cache = createCache();
-      api.get('/some-cacheable-path?d=ank').reply(200, defaultResponse.body, defaultHeaders);
+      api
+        .get('/some-cacheable-path?d=ank')
+        .reply(200, defaultResponse.body, defaultHeaders);
 
       const expiry = Date.now() + 60000;
 
@@ -373,7 +373,7 @@ describe('Max-Age', () => {
 
       const cached = await cache.get({
         segment: `http-transport:${VERSION}:body`,
-        id: 'GET:http://www.example.com/some-cacheable-path?d=ank'
+        id: 'GET:http://www.example.com/some-cacheable-path?d=ank',
       });
 
       const actualExpiry = cached.ttl + cached.stored;
@@ -385,7 +385,9 @@ describe('Max-Age', () => {
 
     it('keys cache entries by url including query strings in query object', async () => {
       const cache = createCache();
-      api.get('/some-cacheable-path?d=ank').reply(200, defaultResponse.body, defaultHeaders);
+      api
+        .get('/some-cacheable-path?d=ank')
+        .reply(200, defaultResponse.body, defaultHeaders);
 
       const expiry = Date.now() + 60000;
 
@@ -396,7 +398,7 @@ describe('Max-Age', () => {
 
       const cached = await cache.get({
         segment: `http-transport:${VERSION}:body`,
-        id: 'GET:http://www.example.com/some-cacheable-path?d=ank'
+        id: 'GET:http://www.example.com/some-cacheable-path?d=ank',
       });
 
       const actualExpiry = cached.ttl + cached.stored;
@@ -410,7 +412,7 @@ describe('Max-Age', () => {
       const headers = {
         'cache-control': 'max-age=60',
         'accept-language': 'en',
-        accept: 'application/json'
+        accept: 'application/json',
       };
       const cache = createCache();
       api.get('/some-cacheable-path').reply(200, defaultResponse.body, headers);
@@ -418,10 +420,7 @@ describe('Max-Age', () => {
       const expiry = Date.now() + 60000;
 
       const opts = {
-        varyOn: [
-          'accept-language',
-          'accept'
-        ]
+        varyOn: ['accept-language', 'accept'],
       };
 
       await createCacheClient(cache, opts)
@@ -431,7 +430,7 @@ describe('Max-Age', () => {
 
       const cached = await cache.get({
         segment: `http-transport:${VERSION}:body`,
-        id: 'GET:http://www.example.com/some-cacheable-path:accept-language=en,accept=application/json'
+        id: 'GET:http://www.example.com/some-cacheable-path:accept-language=en,accept=application/json',
       });
 
       const actualExpiry = cached.ttl + cached.stored;
@@ -445,7 +444,7 @@ describe('Max-Age', () => {
       const headers = {
         'cache-control': 'max-age=60',
         'accept-language': 'en',
-        accept: 'application/json'
+        accept: 'application/json',
       };
       const cache = createCache();
       api.get('/some-cacheable-path').reply(200, defaultResponse.body, headers);
@@ -453,10 +452,7 @@ describe('Max-Age', () => {
       const expiry = Date.now() + 60000;
 
       const opts = {
-        varyOn: [
-          'some-rand-header-a',
-          'some-rand-header-b'
-        ]
+        varyOn: ['some-rand-header-a', 'some-rand-header-b'],
       };
 
       await createCacheClient(cache, opts)
@@ -466,7 +462,7 @@ describe('Max-Age', () => {
 
       const cached = await cache.get({
         segment: `http-transport:${VERSION}:body`,
-        id: 'GET:http://www.example.com/some-cacheable-path:some-rand-header-a=,some-rand-header-b='
+        id: 'GET:http://www.example.com/some-cacheable-path:some-rand-header-a=,some-rand-header-b=',
       });
 
       const actualExpiry = cached.ttl + cached.stored;
@@ -479,7 +475,9 @@ describe('Max-Age', () => {
 
   it('does not store if cache control headers are non numbers', async () => {
     const cache = createCache();
-    api.get('/').reply(200, defaultResponse.body, { 'cache-control': 'max-age=NAN' });
+    api
+      .get('/')
+      .reply(200, defaultResponse.body, { 'cache-control': 'max-age=NAN' });
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
@@ -507,7 +505,7 @@ describe('Max-Age', () => {
 
   it('returns a cached response when available', async () => {
     const headers = {
-      'cache-control': 'max-age=0'
+      'cache-control': 'max-age=0',
     };
 
     const cachedResponse = {
@@ -515,12 +513,12 @@ describe('Max-Age', () => {
       headers,
       statusCode: 200,
       url: 'http://www.example.com/',
-      elapsedTime: 40
+      elapsedTime: 40,
     };
 
     const cache = createCache();
     api.get('/').reply(200, defaultResponse, {
-      headers
+      headers,
     });
 
     await cache.start();
@@ -543,7 +541,7 @@ describe('Max-Age', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.isNull(cached);
+    assert.strictEqual(cached, null);
   });
 
   it('does not store if private', async () => {
@@ -553,7 +551,7 @@ describe('Max-Age', () => {
 
     await requestWithCache(cache);
     const cached = await cache.get(bodySegment);
-    assert.isNull(cached);
+    assert.strictEqual(cached, null);
   });
 
   describe('Events', () => {
@@ -567,7 +565,7 @@ describe('Max-Age', () => {
       });
 
       const opts = {
-        name: 'ceych'
+        name: 'ceych',
       };
 
       await requestWithCache(cache, opts);
@@ -604,7 +602,7 @@ describe('Max-Age', () => {
     it('emits a connection_error event with error when cache.start fails', async () => {
       api.get('/').reply(200, 'ok');
       let cacheConnectionError = null;
-      events.on('cache.connection_error', (ctx, err) => {
+      events.on('cache.connection_error', (_ctx, err) => {
         cacheConnectionError = err;
       });
       const catboxCache = createCache();
@@ -612,7 +610,7 @@ describe('Max-Age', () => {
 
       const opts = {
         ignoreCacheErrors: true,
-        connectionTimeout
+        connectionTimeout,
       };
       const middleware = cache.maxAge(catboxCache, opts);
 
@@ -623,7 +621,10 @@ describe('Max-Age', () => {
 
       await requestWithCache(catboxCache, opts, middleware);
 
-      assert(cacheConnectionError instanceof Error, 'expected error to have been emitted');
+      assert(
+        cacheConnectionError instanceof Error,
+        'expected error to have been emitted',
+      );
       assert.strictEqual(cacheConnectionError.message, 'fake error');
     });
 
@@ -639,7 +640,7 @@ describe('Max-Age', () => {
       await requestWithCache(cache);
       await requestWithCache(cache);
 
-      assert.instanceOf(context, httpTransport.context);
+      assert.ok(context instanceof httpTransport.context);
     });
 
     it('returns a context from a cache miss event emission', async () => {
@@ -653,7 +654,7 @@ describe('Max-Age', () => {
 
       await requestWithCache(cache);
 
-      assert.instanceOf(context, httpTransport.context);
+      assert.ok(context instanceof httpTransport.context);
     });
 
     it('returns a context from a cache timeout event emission', async () => {
@@ -671,8 +672,8 @@ describe('Max-Age', () => {
 
       try {
         await requestWithCache(cache, { timeout: 10 });
-      } catch (err) {
-        return assert.instanceOf(context, httpTransport.context);
+      } catch (_err) {
+        return assert.ok(context instanceof httpTransport.context);
       }
 
       assert.fail('Expected to throw');
@@ -691,8 +692,8 @@ describe('Max-Age', () => {
 
       try {
         await requestWithCache(cache);
-      } catch (err) {
-        return assert.instanceOf(context, httpTransport.context);
+      } catch (_err) {
+        return assert.ok(context instanceof httpTransport.context);
       }
 
       assert.fail('Expected to throw');

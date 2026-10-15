@@ -1,1 +1,19 @@
-.github
+# Tests
+test/
+coverage/
+
+# CI / VCS
+.github/
+.git/
+.gitignore
+
+# Tooling & linting
+.npmrc
+biome.json
+
+# Local/dev config
+config.json
+
+# Package manager files
+pnpm-lock.yaml
+pnpm-workspace.yaml

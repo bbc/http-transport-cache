@@ -4,10 +4,10 @@
   "description": "Caching middleware",
   "main": "index.js",
   "scripts": {
-    "test": "mocha && pnpm run lint",
-    "coverage": "nyc mocha && nyc report --reporter=html && nyc report --reporter=json-summary",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "test": "jest && pnpm run lint",
+    "coverage": "jest --coverage",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
   },
   "repository": {
     "type": "git",
@@ -17,7 +17,7 @@
     "url": "https://github.com/bbc/http-transport-cache/issues"
   },
   "engines": {
-    "node": ">=8.13.0",
+    "node": ">=24",
     "pnpm": ">=10"
   },
   "keywords": [
@@ -29,44 +29,27 @@
   ],
   "license": "Apache-2.0",
   "devDependencies": {
-    "@bbc/http-transport": "^4.3.0",
-    "@bbc/http-transport-to-error": "^2.2.0",
-    "chai": "^4.1.2",
-    "eslint": "^8.54.0",
-    "eslint-config-iplayer": "^9.1.0",
-    "eslint-plugin-mocha": "^10.2.0",
-    "mocha": "^10.3.0",
+    "@bbc/http-transport": "^5.0.1",
+    "@bbc/http-transport-to-error": "^3.0.0",
+    "@biomejs/biome": "2.5.15",
+    "jest": "^30.5.2",
     "nock": "^13.0.4",
-    "nyc": "^15.1.0",
     "sinon": "^9.0.3"
   },
   "dependencies": {
     "@hapi/catbox": "^12.1.1",
     "@hapi/catbox-memory": "^6.0.1",
-    "@hapi/wreck": "^18.0.1",
-    "bluebird": "^3.7.2",
-    "lodash": "^4.17.20"
+    "@hapi/wreck": "^18.1.2",
+    "bluebird": "^3.7.2"
   },
   "peerDependencies": {
-    "@bbc/http-transport": "^3 || ^4"
+    "@bbc/http-transport": "^5.0.0"
   },
-  "eslintConfig": {
-    "extends": "iplayer",
-    "parserOptions": {
-      "ecmaVersion": "latest"
-    },
-      "overrides": [
-    {
-      "files": ["test/**/*.js"], 
-      "rules": {
-        "listeners/no-inline-function-event-listener": "off",
-        "listeners/no-missing-remove-event-listener": "off"
-      }
-    }
-  ]
-  },
-  "mocha": {
-    "recursive": true,
-    "exit": true
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "<rootDir>/test/**/*.js"
+    ],
+    "forceExit": true
   }
 }

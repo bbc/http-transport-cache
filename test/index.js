@@ -1,6 +1,4 @@
-'use strict';
-
-const assert = require('assert');
+const assert = require('node:assert');
 const nock = require('nock');
 const httpTransport = require('@bbc/http-transport');
 const Catbox = require('@hapi/catbox');
@@ -12,11 +10,11 @@ const httpTransportCache = require('../');
 
 const bodySegment = {
   segment: `http-transport:${VERSION}:stale`,
-  id: 'GET:http://www.example.com/'
+  id: 'GET:http://www.example.com/',
 };
 
 const defaultHeaders = {
-  'cache-control': 'max-age=60,stale-if-error=7200'
+  'cache-control': 'max-age=60,stale-if-error=7200',
 };
 
 const cachedResponse = {
@@ -24,7 +22,7 @@ const cachedResponse = {
   headers: defaultHeaders,
   elapsedTime: 40,
   url: 'http://www.example.com/',
-  statusCode: 200
+  statusCode: 200,
 };
 
 function createCache() {
@@ -38,9 +36,7 @@ describe('http-transport-cache', () => {
   it('supports max-age and stale-if-error together', async () => {
     const cache = createCache();
 
-    nock('http://www.example.com')
-      .get('/')
-      .reply(500, '', defaultHeaders);
+    nock('http://www.example.com').get('/').reply(500, '', defaultHeaders);
 
     const client = httpTransport
       .createBuilder()
@@ -50,9 +46,7 @@ describe('http-transport-cache', () => {
 
     await cache.start();
     await cache.set(bodySegment, cachedResponse, 7200);
-    const res = await client
-      .get('http://www.example.com/')
-      .asResponse();
+    const res = await client.get('http://www.example.com/').asResponse();
 
     assert.strictEqual(res.statusCode, 200);
     assert.equal(res.body, 'http-transport');
