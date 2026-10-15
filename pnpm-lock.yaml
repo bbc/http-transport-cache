@@ -15,22 +15,18 @@ importers:
         specifier: ^6.0.1
         version: 6.0.2
       '@hapi/wreck':
-<<<<<<< Updated upstream
-        specifier: ^18.0.1
-=======
         specifier: ^18.1.2
->>>>>>> Stashed changes
         version: 18.1.2
       bluebird:
         specifier: ^3.7.2
         version: 3.7.2
     devDependencies:
       '@bbc/http-transport':
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       '@bbc/http-transport-to-error':
         specifier: ^2.2.0
-        version: 2.2.2(@bbc/http-transport@5.0.0)
+        version: 2.2.2(@bbc/http-transport@5.0.1)
       '@biomejs/biome':
         specifier: 2.5.15
         version: 2.5.15
@@ -239,8 +235,8 @@ packages:
     peerDependencies:
       '@bbc/http-transport': ^3 || ^4
 
-  '@bbc/http-transport@5.0.0':
-    resolution: {integrity: sha512-Hc/gsMDUNRGtgToEgdbI3/oK7MNqFRMGzZ5hrrZxGXg22K7YQA1Mx4y6W06NP5f/idlj2toY7EViW+suv7jGng==}
+  '@bbc/http-transport@5.0.1':
+    resolution: {integrity: sha512-yyKs9fLTtneeDjJBnZB5Vdgj4bQh3YO5g8nAHtqZ+YEOiNOH2fY1Q4PDQAcxsH5Bwa9Z7C36pv8lhMjsrnee9g==}
     engines: {node: '>=24.0.0', pnpm: '>=10'}
 
   '@bcoe/v8-coverage@0.2.3':
@@ -1321,9 +1317,6 @@ packages:
     resolution: {integrity: sha512-z+Uw/vLuy6gQe8cfaFWD7p0wVv8fJl3mbzXh33RS+0oW2wvUqiRXiQ69gLWSLpgB5/6sU+r6BlQR0MBILadqTQ==}
     deprecated: This package is deprecated. Use the optional chaining (?.) operator instead.
 
-  lodash@4.18.1:
-    resolution: {integrity: sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==}
-
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
 
@@ -1911,16 +1904,15 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@bbc/http-transport-to-error@2.2.2(@bbc/http-transport@5.0.0)':
+  '@bbc/http-transport-to-error@2.2.2(@bbc/http-transport@5.0.1)':
     dependencies:
-      '@bbc/http-transport': 5.0.0
+      '@bbc/http-transport': 5.0.1
 
-  '@bbc/http-transport@5.0.0':
+  '@bbc/http-transport@5.0.1':
     dependencies:
       '@types/node-fetch': 2.6.13
       http-proxy-agent: 7.0.2
       koa-compose: 4.1.0
-      lodash: 4.18.1
       node-fetch: 2.7.0
       qs: 6.16.0
     transitivePeerDependencies:
@@ -3205,8 +3197,6 @@ snapshots:
       p-locate: 4.1.0
 
   lodash.get@4.4.2: {}
-
-  lodash@4.18.1: {}
 
   lru-cache@10.4.3: {}
 

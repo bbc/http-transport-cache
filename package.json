@@ -29,7 +29,7 @@
   ],
   "license": "Apache-2.0",
   "devDependencies": {
-    "@bbc/http-transport": "^5.0.0",
+    "@bbc/http-transport": "^5.0.1",
     "@bbc/http-transport-to-error": "^2.2.0",
     "@biomejs/biome": "2.5.15",
     "jest": "^30.5.2",
